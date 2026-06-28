@@ -318,6 +318,7 @@ textarea { resize:none; height:80px; }
             <span style="font-size:12px;font-weight:700">AI Analysis</span>
             <span id="aiIntentBadge" style="font-size:10px;padding:3px 9px;border-radius:99px;font-weight:700"></span>
           </div>
+          <p id="aiTranscriptPreview" style="display:none;font-size:10px;color:rgba(255,255,255,0.5);font-style:italic;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px"></p>
           <div style="display:flex;gap:16px;margin-bottom:10px">
             <div style="text-align:center">
               <div style="font-size:22px;font-weight:800" id="aiDelta"></div>
@@ -754,6 +755,10 @@ function renderAI(a) {
     document.getElementById('aiRedFlags').innerHTML=a.redFlags.map(s=>`<span style="background:rgba(220,38,38,0.2);padding:2px 8px;border-radius:99px;font-size:10px;color:#FCA5A5">${s}</span>`).join('');
   }
   document.getElementById('aiFollowUp').textContent=a.followUpHook||'';
+  // Show transcript used
+  const src2 = document.getElementById('notesField').value.trim() || finalTranscript.trim();
+  const preview = document.getElementById('aiTranscriptPreview');
+  if(preview && src2) { preview.textContent = '"' + src2.slice(0,120) + (src2.length>120?'…':'') + '"'; preview.style.display='block'; }
   document.getElementById('aiResult').style.display='block';
 }
 </script>
