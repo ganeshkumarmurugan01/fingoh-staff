@@ -723,23 +723,16 @@ async function runAI() {
   document.getElementById('aiResult').style.display='none';
   document.getElementById('modeAI').disabled=true;
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const res = await fetch('https://web-production-93e78d.up.railway.app/api/v1/audience/ai/analyse-conversation',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:600,
-        messages:[{role:'user',content:`You are a B2B sales intelligence agent at a trade fair.
-Visitor: ${state.sel?.name} from ${state.sel?.company} (IEI: ${Math.round(state.sel?.iei_score||0)}, ${state.sel?.iei_tier||'unknown'} tier).
-Conversation: "${src}"
-Respond ONLY with valid JSON:
-{"intentLevel":"strong|moderate|weak","scoreDelta":"+8","nextQuestion":"string","buyingSignals":["1-4 short signals"],"missingSignals":["1-3 items"],"redFlags":["0-2 items"],"recommendedAction":"one actionable sentence","followUpHook":"one sentence to open follow-up email"}`}]
+        visitor: { name: state.sel?.name, company: state.sel?.company, iei_score: state.sel?.iei_score, iei_tier: state.sel?.iei_tier },
+        conversation: src
       })
     });
     const data = await res.json();
-    const text = (data.content||[]).find(b=>b.type==='text')?.text||'{}'
-    const match = text.match(/\{[\s\S]*\}/);
-    aiAnalysis = match ? JSON.parse(match[0]) : null;
+    aiAnalysis = data && data.intentLevel ? data : null;
     if(aiAnalysis) renderAI(aiAnalysis);
   } catch(e) { console.error(e); }
   document.getElementById('aiLoading').style.display='none';
