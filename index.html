@@ -228,9 +228,7 @@ function doLogout() {
 async function loadVisitors() {
   document.getElementById('visitorList').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div>Loading visitors…</div></div>';
   try {
-    const res = await fetch(`${API}/audience/visitors/${state.event_id}`, {
-      headers: { 'x-fingoh-auth': `Bearer ${state.staff?.token || ''}` }
-    });
+    const res = await fetch(`${API}/audience/visitors/${state.event_id}`);
     if (!res.ok) throw new Error('Failed to load');
     state.visitors = await res.json();
     document.getElementById('visitorCount').textContent = `${state.visitors.length} visitors · sorted by IEI score`;
@@ -412,7 +410,7 @@ async function submitSignal() {
   try {
     const res = await fetch(`${API}/audience/log-signal/${state.event_id}`, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-fingoh-auth': `Bearer ${state.staff?.token || ''}` },
+      headers: { 'Content-Type':'application/json' },
       body: JSON.stringify(payload)
     });
     const data = await res.json();
