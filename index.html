@@ -55,6 +55,9 @@ textarea { resize:none; height:80px; }
 .ok { background:#F0FDF4; color:#166534; padding:14px; border-radius:10px; font-size:13px; margin-top:10px; text-align:center; }
 .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-right:6px; }
 @keyframes spin { to { transform:rotate(360deg); } }
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.1);opacity:0.8} }
+.mode-tab { flex:1; padding:8px; border:1.5px solid #E2E8F0; border-radius:9px; background:white; font-size:11px; font-weight:600; color:var(--muted); cursor:pointer; font-family:inherit; transition:all .12s; }
+.mode-tab.active { border-color:var(--navy); background:var(--navy); color:white; }
 .back-btn { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--navy); background:none; border:none; cursor:pointer; padding:8px 0; margin-bottom:12px; }
 .search-drop { border:1px solid #E2E8F0; border-radius:10px; margin-top:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.07); }
 .search-drop-item { padding:10px 13px; cursor:pointer; border-bottom:1px solid #F8FAFC; display:flex; justify-content:space-between; align-items:center; }
@@ -265,6 +268,81 @@ textarea { resize:none; height:80px; }
         <span class="step-sub">— optional</span>
       </div>
       <textarea id="notesField" placeholder="Key points, specific needs, follow-up actions…"></textarea>
+    </div>
+
+    <!-- Step 7: Conversation capture -->
+    <div class="section" id="step7" style="opacity:0.4">
+      <div class="step-head">
+        <div class="step-num dim" id="sn7">7</div>
+        <span class="step-label">Conversation capture</span>
+        <span class="step-sub">— text · voice · AI analysis</span>
+      </div>
+      <!-- Mode tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button class="mode-tab active" onclick="setMode('text')" id="modeText">✏️ Type</button>
+        <button class="mode-tab" onclick="setMode('voice')" id="modeVoice">🎙 Voice</button>
+        <button class="mode-tab" onclick="runAI()" id="modeAI">+ AI Analyse</button>
+      </div>
+      <!-- Text mode -->
+      <div id="textMode">
+        <textarea id="notesField" placeholder="e.g. Replacing 3 CT scanners — Q1 budget approved, I sign off under SGD 2.8M. Currently using Philips, want to switch. Need HL7 and ASEAN framework pricing." style="height:90px"></textarea>
+        <p style="font-size:10px;color:var(--muted);margin-top:5px">Mention budget, timeline, authority, or requirements to add signal weight.</p>
+      </div>
+      <!-- Voice mode -->
+      <div id="voiceMode" style="display:none">
+        <div id="voiceIdle" style="text-align:center;padding:20px">
+          <div style="font-size:48px;margin-bottom:10px">🎙</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Tap to record your conversation summary</p>
+          <button class="btn btn-navy" onclick="startVoice()" style="width:auto;padding:10px 24px">Start recording</button>
+        </div>
+        <div id="voiceRecording" style="display:none;text-align:center;padding:20px">
+          <div style="width:60px;height:60px;border-radius:50%;background:#FEE2E2;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;animation:pulse 1s infinite">
+            <div style="width:20px;height:20px;border-radius:50%;background:#DC2626"></div>
+          </div>
+          <p style="font-size:12px;font-weight:600;color:#DC2626;margin-bottom:6px">Recording… <span id="recTimer">0s</span></p>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:14px" id="interimText">Speak now…</p>
+          <button class="btn" onclick="stopVoice()" style="background:#DC2626;color:white;width:auto;padding:10px 24px">Stop</button>
+        </div>
+        <div id="voiceTranscript" style="display:none">
+          <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:12px;margin-bottom:10px">
+            <p style="font-size:10px;font-weight:700;color:#14532D;margin-bottom:6px">TRANSCRIPT</p>
+            <p style="font-size:12px;color:#166534;line-height:1.6;margin:0" id="transcriptText"></p>
+          </div>
+          <button class="btn btn-outline" onclick="retryVoice()" style="margin-top:0;font-size:12px;padding:8px">Re-record</button>
+        </div>
+      </div>
+      <!-- AI Analysis result -->
+      <div id="aiResult" style="display:none;margin-top:12px">
+        <div style="background:linear-gradient(135deg,#0D1B3E,#1E3A8A);border-radius:12px;padding:14px;color:white;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:12px;font-weight:700">AI Analysis</span>
+            <span id="aiIntentBadge" style="font-size:10px;padding:3px 9px;border-radius:99px;font-weight:700"></span>
+          </div>
+          <div style="display:flex;gap:16px;margin-bottom:10px">
+            <div style="text-align:center">
+              <div style="font-size:22px;font-weight:800" id="aiDelta"></div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.5)">SCORE DELTA</div>
+            </div>
+            <div style="flex:1">
+              <p style="font-size:11px;color:rgba(255,255,255,0.8);margin:0;font-style:italic" id="aiAction"></p>
+            </div>
+          </div>
+          <p style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:4px;font-weight:600">BUYING SIGNALS</p>
+          <div id="aiBuyingSignals" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
+          <div id="aiRedFlagsWrap" style="display:none">
+            <p style="font-size:10px;color:#FCA5A5;margin-bottom:4px;font-weight:600">RED FLAGS</p>
+            <div id="aiRedFlags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-top:4px">
+            <p style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:3px;font-weight:600">FOLLOW-UP HOOK</p>
+            <p style="font-size:11px;color:rgba(255,255,255,0.75);margin:0;font-style:italic" id="aiFollowUp"></p>
+          </div>
+        </div>
+      </div>
+      <div id="aiLoading" style="display:none;text-align:center;padding:16px">
+        <div style="width:24px;height:24px;border:2px solid #E2E8F0;border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px"></div>
+        <p style="font-size:12px;color:var(--muted)">Analysing conversation…</p>
+      </div>
     </div>
 
     <!-- Submit -->
@@ -524,6 +602,9 @@ async function submitSignal() {
       meeting_booked: state.mtg,
       urgency: state.urgency,
       notes: document.getElementById('notesField').value.trim(),
+      ai_intent_level: aiAnalysis?.intentLevel || null,
+      ai_buying_signals: aiAnalysis?.buyingSignals || [],
+      ai_score_delta: aiAnalysis?.scoreDelta || null,
     };
     const res = await fetch(`${API}/audience/log-signal/${state.event_id}`,{
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
@@ -532,7 +613,21 @@ async function submitSignal() {
     if(!res.ok) throw new Error(data.detail||'Save failed');
 
     document.getElementById('formView').style.display='none';
-    document.getElementById('doneMsg').innerHTML = `${state.sel.name}'s IEI score updated to <strong>${Math.round(data.iei_score)} (${data.iei_tier})</strong>`;
+    document.getElementById('doneMsg').innerHTML = `
+      <div style="display:flex;gap:16px;justify-content:center;margin-top:8px">
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#166534;font-weight:600;margin-bottom:2px">PRE-EVENT IEI</div>
+          <div style="font-size:24px;font-weight:800;color:#16A34A">${Math.round(data.iei_score||0)}</div>
+          <div style="font-size:10px;color:#166534">${data.iei_tier||''}</div>
+        </div>
+        <div style="width:1px;background:#86EFAC"></div>
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#166534;font-weight:600;margin-bottom:2px">ON-SITE IEI</div>
+          <div style="font-size:24px;font-weight:800;color:#0D9488">${Math.round(data.onsite_iei_score||0)}</div>
+          <div style="font-size:10px;color:#166534">${data.onsite_iei_tier||''}</div>
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:12px;color:#166534">${state.sel.name}'s on-site intelligence captured</p>`;
     document.getElementById('doneView').style.display='block';
     resetForm();
     setTimeout(()=>{ document.getElementById('doneView').style.display='none'; document.getElementById('formView').style.display='block'; }, 2500);
@@ -554,6 +649,120 @@ function resetForm() {
 }
 
 function showMsg(id,msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
+
+// ── Conversation capture ─────────────────────────────────────────────────────
+let voiceMode = 'text';
+let recognition = null;
+let recInterval = null;
+let recSeconds = 0;
+let finalTranscript = '';
+let aiAnalysis = null;
+
+function setMode(mode) {
+  voiceMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('mode'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('active');
+  document.getElementById('textMode').style.display = mode==='text'?'block':'none';
+  document.getElementById('voiceMode').style.display = mode==='voice'?'block':'none';
+}
+
+function startVoice() {
+  if(!(\'webkitSpeechRecognition\' in window || 'SpeechRecognition' in window)) {
+    alert('Voice recording not supported on this browser. Please use Chrome on Android or Safari on iOS.'); return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  finalTranscript = '';
+  recSeconds = 0;
+  document.getElementById('voiceIdle').style.display='none';
+  document.getElementById('voiceRecording').style.display='block';
+  document.getElementById('voiceTranscript').style.display='none';
+  recInterval = setInterval(()=>{ recSeconds++; document.getElementById('recTimer').textContent=recSeconds+'s'; }, 1000);
+  recognition.onresult = (e) => {
+    let interim = '';
+    for(let i=e.resultIndex;i<e.results.length;i++) {
+      if(e.results[i].isFinal) finalTranscript += e.results[i][0].transcript+' ';
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('interimText').textContent = (finalTranscript+interim).slice(-120) || 'Speak now…';
+  };
+  recognition.onerror = (e) => { stopVoice(); };
+  recognition.start();
+}
+
+function stopVoice() {
+  if(recognition) { recognition.stop(); recognition=null; }
+  clearInterval(recInterval);
+  const text = finalTranscript.trim();
+  document.getElementById('voiceRecording').style.display='none';
+  if(text) {
+    document.getElementById('transcriptText').textContent = text;
+    document.getElementById('voiceTranscript').style.display='block';
+    document.getElementById('notesField').value = text;
+  } else {
+    document.getElementById('voiceIdle').style.display='block';
+  }
+}
+
+function retryVoice() {
+  finalTranscript='';
+  document.getElementById('voiceTranscript').style.display='none';
+  document.getElementById('voiceIdle').style.display='block';
+  document.getElementById('aiResult').style.display='none';
+  aiAnalysis=null;
+}
+
+async function runAI() {
+  const src = document.getElementById('notesField').value.trim() || finalTranscript.trim();
+  if(!src) { alert('Please type or record a conversation first.'); return; }
+  if(!state.sel) { alert('Please select a visitor first.'); return; }
+  document.getElementById('aiLoading').style.display='block';
+  document.getElementById('aiResult').style.display='none';
+  document.getElementById('modeAI').disabled=true;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:600,
+        messages:[{role:'user',content:`You are a B2B sales intelligence agent at a trade fair.
+Visitor: ${state.sel?.name} from ${state.sel?.company} (IEI: ${Math.round(state.sel?.iei_score||0)}, ${state.sel?.iei_tier||'unknown'} tier).
+Conversation: "${src}"
+Respond ONLY with valid JSON:
+{"intentLevel":"strong|moderate|weak","scoreDelta":"+8","nextQuestion":"string","buyingSignals":["1-4 short signals"],"missingSignals":["1-3 items"],"redFlags":["0-2 items"],"recommendedAction":"one actionable sentence","followUpHook":"one sentence to open follow-up email"}`}]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).find(b=>b.type==='text')?.text||'{}'
+    const match = text.match(/\{[\s\S]*\}/);
+    aiAnalysis = match ? JSON.parse(match[0]) : null;
+    if(aiAnalysis) renderAI(aiAnalysis);
+  } catch(e) { console.error(e); }
+  document.getElementById('aiLoading').style.display='none';
+  document.getElementById('modeAI').disabled=false;
+}
+
+function renderAI(a) {
+  const intentColors={strong:'#16A34A',moderate:'#2563EB',weak:'#DC2626'};
+  const col=intentColors[a.intentLevel]||'#64748B';
+  document.getElementById('aiIntentBadge').textContent=(a.intentLevel||'')+' intent';
+  document.getElementById('aiIntentBadge').style.background=col+'30';
+  document.getElementById('aiIntentBadge').style.color=col;
+  document.getElementById('aiDelta').textContent=a.scoreDelta||'+0';
+  document.getElementById('aiDelta').style.color=a.scoreDelta?.startsWith('+')?'#4ADE80':'#FCA5A5';
+  document.getElementById('aiAction').textContent=a.recommendedAction||'';
+  document.getElementById('aiBuyingSignals').innerHTML=(a.buyingSignals||[]).map(s=>`<span style="background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:99px;font-size:10px;color:rgba(255,255,255,0.8)">${s}</span>`).join('');
+  if((a.redFlags||[]).length) {
+    document.getElementById('aiRedFlagsWrap').style.display='block';
+    document.getElementById('aiRedFlags').innerHTML=a.redFlags.map(s=>`<span style="background:rgba(220,38,38,0.2);padding:2px 8px;border-radius:99px;font-size:10px;color:#FCA5A5">${s}</span>`).join('');
+  }
+  document.getElementById('aiFollowUp').textContent=a.followUpHook||'';
+  document.getElementById('aiResult').style.display='block';
+}
 </script>
 </body>
 </html>
