@@ -4,94 +4,68 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0D1B3E">
-<title>Fingoh Staff App</title>
+<title>Fingoh Staff</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F8FC; color: #1A1A2E; min-height: 100vh; }
-  :root { --navy: #0D1B3E; --blue: #2563EB; --green: #16A34A; --red: #DC2626; --orange: #F97316; --muted: #64748B; --light: #F1F5F9; --white: #FFFFFF; }
-
-  /* Header */
-  .header { background: var(--navy); color: white; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .header-logo { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
-  .header-event { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-  .staff-badge { background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-
-  /* Screens */
-  .screen { display: none; padding: 16px; max-width: 480px; margin: 0 auto; }
-  .screen.active { display: block; }
-
-  /* Login */
-  .login-card { background: white; border-radius: 16px; padding: 28px 24px; margin-top: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
-  .login-title { font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
-  .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-
-  /* Form elements */
-  label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; margin-top: 14px; }
-  input, select, textarea { width: 100%; padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 10px; font-size: 14px; font-family: inherit; background: white; outline: none; transition: border-color .15s; }
-  input:focus, select:focus, textarea:focus { border-color: var(--blue); }
-  textarea { resize: none; height: 80px; }
-
-  /* Buttons */
-  .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s; margin-top: 16px; }
-  .btn:active { opacity: 0.85; }
-  .btn-primary { background: var(--navy); color: white; }
-  .btn-green { background: var(--green); color: white; }
-  .btn-outline { background: transparent; border: 1.5px solid #E2E8F0; color: var(--navy); margin-top: 8px; }
-
-  /* Search */
-  .search-bar { position: relative; margin-bottom: 14px; }
-  .search-bar input { padding-left: 38px; }
-  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; }
-
-  /* Visitor cards */
-  .visitor-card { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; border-left: 4px solid transparent; transition: all .12s; }
-  .visitor-card:active { opacity: 0.85; }
-  .visitor-card.Hot { border-left-color: #ef4444; }
-  .visitor-card.Warm { border-left-color: #f97316; }
-  .visitor-card.Cool { border-left-color: #3b82f6; }
-  .visitor-card.Cold { border-left-color: #9ca3af; }
-  .visitor-name { font-size: 14px; font-weight: 700; color: var(--navy); }
-  .visitor-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .visitor-score { font-size: 20px; font-weight: 800; }
-  .visitor-score.Hot { color: #ef4444; }
-  .visitor-score.Warm { color: #f97316; }
-  .visitor-score.Cool { color: #3b82f6; }
-  .visitor-score.Cold { color: #9ca3af; }
-  .tier-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700; }
-  .tier-badge.Hot { background: #FEE2E2; color: #991B1B; }
-  .tier-badge.Warm { background: #FEF3C7; color: #92400E; }
-  .tier-badge.Cool { background: #DBEAFE; color: #1E40AF; }
-  .tier-badge.Cold { background: #F1F5F9; color: #475569; }
-
-  /* Stars */
-  .stars { display: flex; gap: 8px; margin-top: 6px; }
-  .star { font-size: 28px; cursor: pointer; transition: transform .1s; }
-  .star:active { transform: scale(1.2); }
-
-  /* Signal buttons */
-  .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
-  .signal-btn { padding: 10px; border: 1.5px solid #E2E8F0; border-radius: 10px; background: white; font-size: 12px; font-weight: 600; color: var(--navy); cursor: pointer; text-align: center; transition: all .12s; }
-  .signal-btn.selected { border-color: var(--blue); background: #EFF6FF; color: var(--blue); }
-  .signal-btn.selected.green { border-color: var(--green); background: #F0FDF4; color: var(--green); }
-
-  /* Score update banner */
-  .score-banner { background: linear-gradient(135deg, #0D1B3E, #1E3A8A); color: white; border-radius: 12px; padding: 16px; margin-bottom: 14px; text-align: center; }
-  .score-banner .big { font-size: 48px; font-weight: 800; letter-spacing: -0.03em; }
-
-  /* Back button */
-  .back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--navy); background: none; border: none; cursor: pointer; padding: 8px 0; margin-bottom: 12px; }
-
-  /* Empty state */
-  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
-  .empty-icon { font-size: 48px; margin-bottom: 12px; }
-
-  /* Loading */
-  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .error-msg { background: #FEE2E2; color: #991B1B; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 12px; }
-  .success-msg { background: #F0FDF4; color: #166534; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 12px; }
+  :root { --navy:#0D1B3E; --blue:#2563EB; --green:#16A34A; --red:#DC2626; --orange:#F97316; --muted:#64748B; --light:#F1F5F9; --white:#FFFFFF; }
+  .header { background:var(--navy); color:white; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+  .header-logo { font-size:16px; font-weight:800; letter-spacing:-0.02em; }
+  .header-sub { font-size:10px; color:rgba(255,255,255,0.5); margin-top:2px; }
+  .staff-badge { background:rgba(255,255,255,0.15); padding:4px 10px; border-radius:99px; font-size:11px; font-weight:600; }
+  .screen { display:none; padding:16px; max-width:480px; margin:0 auto; }
+  .screen.active { display:block; }
+  .card { background:white; border-radius:16px; padding:24px; margin-top:20px; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+  .card-title { font-size:18px; font-weight:800; color:var(--navy); margin-bottom:4px; }
+  .card-sub { font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+  label { display:block; font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px; margin-top:14px; }
+  input, select, textarea { width:100%; padding:12px 14px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:14px; font-family:inherit; background:white; outline:none; transition:border-color .15s; appearance:none; }
+  input:focus, select:focus, textarea:focus { border-color:var(--blue); }
+  textarea { resize:none; height:80px; }
+  .btn { width:100%; padding:13px; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; margin-top:14px; }
+  .btn:disabled { opacity:0.6; cursor:not-allowed; }
+  .btn-primary { background:var(--navy); color:white; }
+  .btn-green { background:var(--green); color:white; }
+  .btn-outline { background:transparent; border:1.5px solid #E2E8F0; color:var(--navy); }
+  .search-wrap { position:relative; margin-bottom:12px; }
+  .search-wrap input { padding-left:38px; }
+  .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:16px; pointer-events:none; }
+  .visitor-card { background:white; border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; border-left:4px solid transparent; }
+  .visitor-card.Hot { border-left-color:#ef4444; }
+  .visitor-card.Warm { border-left-color:#f97316; }
+  .visitor-card.Cool { border-left-color:#3b82f6; }
+  .visitor-card.Cold { border-left-color:#9ca3af; }
+  .vname { font-size:14px; font-weight:700; color:var(--navy); }
+  .vmeta { font-size:12px; color:var(--muted); margin-top:2px; }
+  .vscore { font-size:22px; font-weight:800; }
+  .vscore.Hot{color:#ef4444;} .vscore.Warm{color:#f97316;} .vscore.Cool{color:#3b82f6;} .vscore.Cold{color:#9ca3af;}
+  .tier-badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700; }
+  .tier-badge.Hot{background:#FEE2E2;color:#991B1B;} .tier-badge.Warm{background:#FEF3C7;color:#92400E;} .tier-badge.Cool{background:#DBEAFE;color:#1E40AF;} .tier-badge.Cold{background:#F1F5F9;color:#475569;}
+  .stars { display:flex; gap:10px; margin-top:8px; }
+  .star { font-size:32px; cursor:pointer; transition:transform .1s; user-select:none; }
+  .star:active { transform:scale(1.2); }
+  .sig-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .sig-btn { padding:10px; border:1.5px solid #E2E8F0; border-radius:10px; background:white; font-size:12px; font-weight:600; color:var(--navy); cursor:pointer; text-align:center; transition:all .12s; }
+  .sig-btn.sel { border-color:var(--blue); background:#EFF6FF; color:var(--blue); }
+  .sig-btn.sel.g { border-color:var(--green); background:#F0FDF4; color:var(--green); }
+  .back-btn { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--navy); background:none; border:none; cursor:pointer; padding:8px 0; margin-bottom:12px; }
+  .empty { text-align:center; padding:48px 24px; color:var(--muted); }
+  .empty-icon { font-size:40px; margin-bottom:10px; }
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-right:6px; }
+  .spinner-dark { border-color:#E2E8F0; border-top-color:var(--navy); }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .err { background:#FEE2E2; color:#991B1B; padding:10px 14px; border-radius:8px; font-size:12px; margin-top:10px; }
+  .ok { background:#F0FDF4; color:#166534; padding:10px 14px; border-radius:8px; font-size:12px; margin-top:10px; }
+  .event-option { background:white; border:1.5px solid #E2E8F0; border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:all .12s; }
+  .event-option:active { background:#F0F4FF; border-color:var(--blue); }
+  .event-name { font-size:14px; font-weight:700; color:var(--navy); }
+  .event-meta { font-size:12px; color:var(--muted); margin-top:3px; }
+  .step-indicator { display:flex; gap:6px; margin-bottom:20px; }
+  .step { height:3px; border-radius:2px; flex:1; background:#E2E8F0; }
+  .step.active { background:var(--navy); }
+  .step.done { background:var(--green); }
 </style>
 </head>
 <body>
@@ -99,137 +73,173 @@
 <div class="header">
   <div>
     <div class="header-logo">Fingoh Staff</div>
-    <div class="header-event" id="headerEvent">Sign in to continue</div>
+    <div class="header-sub" id="headerSub">Visitor intelligence · on the floor</div>
   </div>
   <div id="staffBadge" style="display:none" class="staff-badge">👤 <span id="staffName"></span></div>
 </div>
 
-<!-- LOGIN SCREEN -->
-<div class="screen active" id="loginScreen">
-  <div class="login-card">
-    <div class="login-title">Staff Login</div>
-    <div class="login-sub">Enter your email and event ID to access your visitor queue.</div>
-    <label>Event ID</label>
-    <input type="text" id="loginEventId" placeholder="Paste event ID from organiser" autocomplete="off">
+<!-- STEP 1: EMAIL -->
+<div class="screen active" id="emailScreen">
+  <div class="card">
+    <div class="step-indicator">
+      <div class="step active" id="s1"></div>
+      <div class="step" id="s2"></div>
+      <div class="step" id="s3"></div>
+    </div>
+    <div class="card-title">Welcome to Fingoh Staff</div>
+    <div class="card-sub">Enter your work email to see your assigned events.</div>
     <label>Your email</label>
-    <input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email">
-    <div id="loginError" class="error-msg" style="display:none"></div>
-    <button class="btn btn-primary" onclick="doLogin()">
-      <span id="loginBtnText">Sign in →</span>
-    </button>
+    <input type="email" id="emailInput" placeholder="you@company.com" autocomplete="email"
+      onkeydown="if(event.key==='Enter')fetchEvents()">
+    <div id="emailErr" class="err" style="display:none"></div>
+    <button class="btn btn-primary" onclick="fetchEvents()" id="emailBtn">Continue →</button>
   </div>
 </div>
 
-<!-- VISITOR LIST SCREEN -->
-<div class="screen" id="listScreen">
-  <div style="margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
-    <div>
-      <div style="font-size:16px;font-weight:800;color:var(--navy)">Visitor Queue</div>
-      <div style="font-size:11px;color:var(--muted)" id="visitorCount">Loading…</div>
+<!-- STEP 2: SELECT EVENT -->
+<div class="screen" id="eventScreen">
+  <div class="card">
+    <div class="step-indicator">
+      <div class="step done"></div>
+      <div class="step active"></div>
+      <div class="step"></div>
     </div>
-    <button class="btn-outline" style="width:auto;padding:6px 14px;margin:0;font-size:12px;border-radius:8px;cursor:pointer" onclick="doLogout()">Sign out</button>
+    <div class="card-title">Select your event</div>
+    <div class="card-sub" id="eventCardSub">Choose the event you're working today.</div>
+    <div id="eventList" style="margin-top:4px"></div>
+    <button class="btn btn-outline" onclick="showScreen('emailScreen')" style="margin-top:8px">← Back</button>
   </div>
-  <div class="search-bar">
+</div>
+
+<!-- STEP 3: VISITOR LIST -->
+<div class="screen" id="listScreen">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div>
+      <div style="font-size:16px;font-weight:800;color:var(--navy)" id="listTitle">Visitors</div>
+      <div style="font-size:11px;color:var(--muted)" id="visitorCount"></div>
+    </div>
+    <button onclick="doLogout()" style="background:none;border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer">Sign out</button>
+  </div>
+  <div class="search-wrap">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="Search name, company, email…" oninput="filterVisitors()">
   </div>
   <div id="visitorList"></div>
 </div>
 
-<!-- VISITOR DETAIL + LOG SCREEN -->
+<!-- VISITOR DETAIL -->
 <div class="screen" id="detailScreen">
-  <button class="back-btn" onclick="showList()">← Back to queue</button>
-  <div id="visitorDetail"></div>
+  <button class="back-btn" onclick="showList()">← Back to visitors</button>
+  <div id="detailContent"></div>
 </div>
 
 <script>
 const API = "https://web-production-93e78d.up.railway.app/api/v1";
-let state = { staff: null, event_id: null, event_name: null, visitors: [], current: null };
+let state = { staff:null, event_id:null, event_name:null, visitors:[], current:null, selectedStar:0 };
 
-// ── Restore session ──────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  const saved = sessionStorage.getItem('fingoh_staff_session');
-  if (saved) {
-    try {
-      const s = JSON.parse(saved);
-      state.staff = s.staff;
-      state.event_id = s.event_id;
-      state.event_name = s.event_name;
+// Restore session
+window.addEventListener('load', ()=>{
+  try {
+    const s = JSON.parse(sessionStorage.getItem('fingoh_staff') || 'null');
+    if (s?.staff && s?.event_id) {
+      Object.assign(state, s);
       updateHeader();
       showScreen('listScreen');
       loadVisitors();
-    } catch {}
-  }
+    }
+  } catch {}
 });
 
 function saveSession() {
-  sessionStorage.setItem('fingoh_staff_session', JSON.stringify({
+  sessionStorage.setItem('fingoh_staff', JSON.stringify({
     staff: state.staff, event_id: state.event_id, event_name: state.event_name
   }));
 }
 
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
 function updateHeader() {
-  document.getElementById('headerEvent').textContent = state.event_name || state.event_id || '';
-  document.getElementById('staffBadge').style.display = 'block';
+  document.getElementById('headerSub').textContent = state.event_name || 'Staff App';
+  document.getElementById('staffBadge').style.display = 'flex';
   document.getElementById('staffName').textContent = state.staff?.name || state.staff?.email || '';
 }
 
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
+function doLogout() {
+  sessionStorage.removeItem('fingoh_staff');
+  state = { staff:null, event_id:null, event_name:null, visitors:[], current:null, selectedStar:0 };
+  document.getElementById('staffBadge').style.display = 'none';
+  document.getElementById('headerSub').textContent = 'Visitor intelligence · on the floor';
+  document.getElementById('emailInput').value = '';
+  showScreen('emailScreen');
 }
 
-// ── Login ────────────────────────────────────────────────────────────────────
-async function doLogin() {
-  const event_id = document.getElementById('loginEventId').value.trim();
-  const email = document.getElementById('loginEmail').value.trim();
-  const errEl = document.getElementById('loginError');
-  const btn = document.getElementById('loginBtnText');
+// ── Step 1: Fetch events for email ──────────────────────────────────────────
+async function fetchEvents() {
+  const email = document.getElementById('emailInput').value.trim();
+  const errEl = document.getElementById('emailErr');
+  const btn = document.getElementById('emailBtn');
   errEl.style.display = 'none';
-  if (!event_id || !email) { showErr('Please fill in both fields.'); return; }
+  if (!email || !email.includes('@')) { showMsg('emailErr','Please enter a valid email'); return; }
 
-  btn.innerHTML = '<span class="spinner"></span>Signing in…';
+  btn.innerHTML = '<span class="spinner"></span>Looking up events…';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/events/public/by-email/${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if (!res.ok || !data.length) { showMsg('emailErr', data.detail || 'No events found for this email. Check with your manager.'); return; }
+
+    state.staffEmail = email;
+    renderEventList(data);
+    showScreen('eventScreen');
+    document.getElementById('eventCardSub').textContent = `Hi! Choose the event you're working today.`;
+  } catch(e) { showMsg('emailErr','Connection error. Check your internet and try again.'); }
+  btn.innerHTML = 'Continue →';
+  btn.disabled = false;
+}
+
+function renderEventList(events) {
+  document.getElementById('eventList').innerHTML = events.map(ev => `
+    <div class="event-option" onclick="selectEvent('${ev.id}', ${JSON.stringify(ev.name)})">
+      <div class="event-name">${ev.name}</div>
+      <div class="event-meta">${ev.venue || ''} ${ev.date_from ? '· ' + ev.date_from.slice(0,10) : ''}</div>
+    </div>
+  `).join('');
+}
+
+// ── Step 2: Login with selected event ───────────────────────────────────────
+async function selectEvent(event_id, event_name) {
+  const email = state.staffEmail;
   try {
     const res = await fetch(`${API}/staff/verify-login`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email, event_id })
     });
     const data = await res.json();
-    if (!res.ok) { showErr(data.detail || 'Login failed'); btn.textContent = 'Sign in →'; return; }
+    if (!res.ok) { alert(data.detail || 'Login failed'); return; }
 
     state.staff = data;
     state.event_id = event_id;
-    state.event_name = data.event_name || event_id;
+    state.event_name = event_name;
     saveSession();
     updateHeader();
+
+    document.getElementById('listTitle').textContent = event_name;
     showScreen('listScreen');
     loadVisitors();
-  } catch(e) { showErr('Connection error. Check your internet.'); }
-  btn.textContent = 'Sign in →';
+  } catch(e) { alert('Connection error'); }
 }
 
-function showErr(msg) {
-  const el = document.getElementById('loginError');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-
-function doLogout() {
-  sessionStorage.removeItem('fingoh_staff_session');
-  state = { staff: null, event_id: null, event_name: null, visitors: [], current: null };
-  document.getElementById('staffBadge').style.display = 'none';
-  document.getElementById('headerEvent').textContent = 'Sign in to continue';
-  showScreen('loginScreen');
-}
-
-// ── Load visitors ────────────────────────────────────────────────────────────
+// ── Visitor list ─────────────────────────────────────────────────────────────
 async function loadVisitors() {
-  document.getElementById('visitorList').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div>Loading visitors…</div></div>';
+  document.getElementById('visitorList').innerHTML = '<div class="empty"><div style="width:24px;height:24px;border:2px solid #E2E8F0;border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px"></div><div>Loading visitors…</div></div>';
   try {
     const res = await fetch(`${API}/audience/visitors/${state.event_id}`);
-    if (!res.ok) throw new Error('Failed to load');
+    if (!res.ok) throw new Error('Failed');
     state.visitors = await res.json();
     document.getElementById('visitorCount').textContent = `${state.visitors.length} visitors · sorted by IEI score`;
     renderVisitors(state.visitors);
@@ -240,195 +250,169 @@ async function loadVisitors() {
 
 function filterVisitors() {
   const q = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = q ? state.visitors.filter(v =>
+  renderVisitors(q ? state.visitors.filter(v =>
     (v.name||'').toLowerCase().includes(q) ||
     (v.company||'').toLowerCase().includes(q) ||
     (v.email||'').toLowerCase().includes(q)
-  ) : state.visitors;
-  renderVisitors(filtered);
+  ) : state.visitors);
 }
 
 function renderVisitors(list) {
-  const el = document.getElementById('visitorList');
   if (!list.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>No visitors found</div></div>';
+    document.getElementById('visitorList').innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>No visitors found</div></div>';
     return;
   }
+  const el = document.getElementById('visitorList');
   el.innerHTML = list.map((v,i) => `
-    <div class="visitor-card ${v.iei_tier||'Cold'}" onclick="showDetail(${i}, ${JSON.stringify(list).indexOf(JSON.stringify(v))})">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div class="visitor-card ${v.iei_tier||'Cold'}" id="vc_${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="flex:1">
-          <div class="visitor-name">${v.name||v.email||'Unknown'}</div>
-          <div class="visitor-meta">${v.designation||''} ${v.designation&&v.company?'·':''} ${v.company||''}</div>
-          <div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div class="vname">${v.name||v.email||'Unknown'}</div>
+          <div class="vmeta">${[v.designation,v.company].filter(Boolean).join(' · ')}</div>
+          <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
             <span class="tier-badge ${v.iei_tier||'Cold'}">${v.iei_tier||'Unscored'}</span>
-            ${v.raw_data?.conv_quality ? `<span style="font-size:10px;color:var(--muted)">Conv: ${'★'.repeat(Math.round(v.raw_data.conv_quality))}</span>` : ''}
+            ${v.raw_data?.conv_quality ? `<span style="font-size:10px;color:var(--muted)">${'★'.repeat(Math.round(v.raw_data.conv_quality))}</span>` : ''}
+            ${v.raw_data?.demo_attendance ? '<span style="font-size:10px;color:var(--green);font-weight:600">✓ Demo</span>' : ''}
           </div>
         </div>
         <div style="text-align:right;padding-left:12px">
-          <div class="visitor-score ${v.iei_tier||'Cold'}">${Math.round(v.iei_score||0)}</div>
+          <div class="vscore ${v.iei_tier||'Cold'}">${Math.round(v.iei_score||0)}</div>
           <div style="font-size:9px;color:var(--muted)">IEI</div>
         </div>
       </div>
     </div>
   `).join('');
-
-  // Re-attach click handlers properly
-  const cards = el.querySelectorAll('.visitor-card');
-  cards.forEach((card, i) => {
-    card.onclick = () => showVisitorDetail(list[i]);
+  list.forEach((v,i) => {
+    document.getElementById(`vc_${i}`).onclick = () => showDetail(v);
   });
 }
 
-// ── Visitor detail + signal logging ─────────────────────────────────────────
+// ── Visitor detail ───────────────────────────────────────────────────────────
 function showList() { showScreen('listScreen'); loadVisitors(); }
 
-function showVisitorDetail(v) {
+function showDetail(v) {
   state.current = v;
+  state.selectedStar = v.raw_data?.conv_quality || 0;
   const tier = v.iei_tier || 'Cold';
   const tierColors = {Hot:'#ef4444',Warm:'#f97316',Cool:'#3b82f6',Cold:'#9ca3af'};
   const raw = v.raw_data || {};
 
-  document.getElementById('visitorDetail').innerHTML = `
-    <!-- Profile header -->
-    <div style="background:linear-gradient(135deg,#0D1B3E,#1E2A4A);border-radius:14px;padding:18px;margin-bottom:14px;color:white">
+  document.getElementById('detailContent').innerHTML = `
+    <div style="background:linear-gradient(135deg,#0D1B3E,#1E3A8A);border-radius:14px;padding:18px;margin-bottom:14px;color:white">
       <div style="display:flex;align-items:center;gap:12px">
         <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0">
-          ${(v.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2)}
+          ${(v.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
         </div>
         <div style="flex:1">
           <div style="font-size:16px;font-weight:700">${v.name||v.email}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6)">${v.designation||''} · ${v.company||''}</div>
-          <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
-            <span class="tier-badge ${tier}">${tier}</span>
-            ${v.country ? `<span style="font-size:10px;color:rgba(255,255,255,0.5)">${v.country}</span>` : ''}
-          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.55)">${[v.designation,v.company].filter(Boolean).join(' · ')}</div>
+          <div style="margin-top:6px"><span class="tier-badge ${tier}">${tier}</span></div>
         </div>
-        <div style="text-align:center">
-          <div style="font-size:36px;font-weight:800;color:${tierColors[tier]}">${Math.round(v.iei_score||0)}</div>
+        <div style="text-align:center;flex-shrink:0">
+          <div style="font-size:38px;font-weight:800;color:${tierColors[tier]}">${Math.round(v.iei_score||0)}</div>
           <div style="font-size:9px;color:rgba(255,255,255,0.4)">IEI SCORE</div>
         </div>
       </div>
-      ${v.email ? `<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px">${v.email}</div>` : ''}
+      ${v.email?`<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1)">${v.email}</div>`:''}
     </div>
 
-    <!-- Log conversation -->
     <div style="background:white;border-radius:14px;padding:18px;box-shadow:0 1px 6px rgba(0,0,0,0.06)">
-      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:14px">Log conversation</div>
+      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px">Log conversation</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Capture signals to update this visitor's IEI score in real time.</div>
 
       <label>Conversation quality</label>
       <div class="stars" id="starsRow">
-        ${[1,2,3,4,5].map(n=>`<span class="star" onclick="setStar(${n})" id="star${n}">${n <= (raw.conv_quality||0) ? '★' : '☆'}</span>`).join('')}
+        ${[1,2,3,4,5].map(n=>`<span class="star" onclick="setStar(${n})" id="star${n}">${n<=(raw.conv_quality||0)?'★':'☆'}</span>`).join('')}
       </div>
 
       <label>Questions asked</label>
-      <div class="signal-grid" id="questionsGrid">
-        ${['pricing','technical','implementation','competitive','general'].map(q=>`
-          <div class="signal-btn ${raw.questions_type===q?'selected':''}" onclick="selectSignal('questionsGrid',this,'${q}')" data-val="${q}">
-            ${q.charAt(0).toUpperCase()+q.slice(1)}
-          </div>
-        `).join('')}
+      <div class="sig-grid" id="qGrid">
+        ${['Pricing','Technical','Implementation','Competitive','General'].map(q=>`<div class="sig-btn${raw.questions_type===q.toLowerCase()?' sel':''}" onclick="selBtn('qGrid',this,'${q.toLowerCase()}')">${q}</div>`).join('')}
       </div>
 
-      <label>Demo attended</label>
-      <div class="signal-grid" id="demoGrid">
-        <div class="signal-btn ${raw.demo_attendance?'selected green':''}" onclick="selectSignal('demoGrid',this,'yes')" data-val="yes">✓ Yes</div>
-        <div class="signal-btn ${!raw.demo_attendance&&raw.demo_attendance!==undefined?'selected':''}" onclick="selectSignal('demoGrid',this,'no')" data-val="no">✗ No</div>
+      <label>Demo attended?</label>
+      <div class="sig-grid" id="dGrid">
+        <div class="sig-btn${raw.demo_attendance?' sel g':''}" onclick="selBtn('dGrid',this,'yes')">✓ Yes</div>
+        <div class="sig-btn${raw.demo_attendance===false?' sel':''}" onclick="selBtn('dGrid',this,'no')">✗ No</div>
       </div>
 
       <label>Collateral requested</label>
-      <div class="signal-grid" id="collateralGrid">
-        ${['specific','generic','none'].map(c=>`
-          <div class="signal-btn ${raw.collateral_requested===c?'selected':''}" onclick="selectSignal('collateralGrid',this,'${c}')" data-val="${c}">
-            ${c.charAt(0).toUpperCase()+c.slice(1)}
-          </div>
-        `).join('')}
+      <div class="sig-grid" id="cGrid">
+        ${['Specific','Generic','None'].map(c=>`<div class="sig-btn${raw.collateral_requested===c.toLowerCase()?' sel':''}" onclick="selBtn('cGrid',this,'${c.toLowerCase()}')">${c}</div>`).join('')}
       </div>
 
-      <label>Return visit</label>
-      <div class="signal-grid" id="returnGrid">
-        <div class="signal-btn ${raw.return_visit?'selected green':''}" onclick="selectSignal('returnGrid',this,'yes')" data-val="yes">✓ Came back</div>
-        <div class="signal-btn" onclick="selectSignal('returnGrid',this,'no')" data-val="no">First visit</div>
+      <label>Return visit?</label>
+      <div class="sig-grid" id="rGrid">
+        <div class="sig-btn${raw.return_visit?' sel g':''}" onclick="selBtn('rGrid',this,'yes')">✓ Came back</div>
+        <div class="sig-btn${raw.return_visit===false?' sel':''}" onclick="selBtn('rGrid',this,'no')">First visit</div>
       </div>
 
       <label>Notes</label>
-      <textarea id="notesField" placeholder="Key discussion points, specific needs, follow-up actions…">${raw.notes||''}</textarea>
+      <textarea id="notesField" placeholder="Key points, specific needs, follow-up actions…">${raw.notes||''}</textarea>
 
-      <div id="signalError" class="error-msg" style="display:none"></div>
-      <div id="signalSuccess" class="success-msg" style="display:none"></div>
-
-      <button class="btn btn-green" onclick="submitSignal()" id="submitBtn">
-        Save conversation signal
-      </button>
+      <div id="sigErr" class="err" style="display:none"></div>
+      <div id="sigOk" class="ok" style="display:none"></div>
+      <button class="btn btn-green" onclick="submitSignal()" id="submitBtn">Save conversation signal</button>
     </div>
   `;
   showScreen('detailScreen');
 }
 
-let selectedStar = 0;
 function setStar(n) {
-  selectedStar = n;
-  [1,2,3,4,5].forEach(i => {
-    document.getElementById(`star${i}`).textContent = i <= n ? '★' : '☆';
-  });
+  state.selectedStar = n;
+  [1,2,3,4,5].forEach(i => document.getElementById(`star${i}`).textContent = i<=n?'★':'☆');
 }
 
-function selectSignal(gridId, el, val) {
-  const grid = document.getElementById(gridId);
-  grid.querySelectorAll('.signal-btn').forEach(b => b.classList.remove('selected','green'));
-  el.classList.add('selected');
-  if (val === 'yes') el.classList.add('green');
+function selBtn(gridId, el, val) {
+  document.querySelectorAll(`#${gridId} .sig-btn`).forEach(b=>b.classList.remove('sel','g'));
+  el.classList.add('sel');
+  if (val==='yes') el.classList.add('g');
+  el.dataset.val = val;
 }
 
-function getSelected(gridId) {
-  const el = document.querySelector(`#${gridId} .signal-btn.selected`);
-  return el ? el.dataset.val : null;
+function getVal(gridId) {
+  const el = document.querySelector(`#${gridId} .sig-btn.sel`);
+  return el?.dataset?.val || el?.textContent?.trim()?.toLowerCase() || null;
 }
 
 async function submitSignal() {
   const btn = document.getElementById('submitBtn');
-  const errEl = document.getElementById('signalError');
-  const okEl = document.getElementById('signalSuccess');
-  errEl.style.display = 'none';
-  okEl.style.display = 'none';
+  const errEl = document.getElementById('sigErr');
+  const okEl = document.getElementById('sigOk');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!state.selectedStar) { showMsg('sigErr','Please rate the conversation quality (tap the stars).'); return; }
 
   const payload = {
     email:                state.current.email,
-    conv_quality:         selectedStar || (state.current.raw_data?.conv_quality || 0),
-    questions_type:       getSelected('questionsGrid') || 'general',
-    demo_attendance:      getSelected('demoGrid') === 'yes',
-    collateral_requested: getSelected('collateralGrid') || 'none',
-    return_visit:         getSelected('returnGrid') === 'yes',
+    conv_quality:         state.selectedStar,
+    questions_type:       getVal('qGrid') || 'general',
+    demo_attendance:      getVal('dGrid') === 'yes',
+    collateral_requested: getVal('cGrid') || 'none',
+    return_visit:         getVal('rGrid') === 'yes',
     notes:                document.getElementById('notesField').value.trim(),
   };
 
-  if (!payload.conv_quality) { errEl.textContent = 'Please rate conversation quality (stars).'; errEl.style.display='block'; return; }
-
   btn.innerHTML = '<span class="spinner"></span>Saving…';
   btn.disabled = true;
-
   try {
     const res = await fetch(`${API}/audience/log-signal/${state.event_id}`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify(payload)
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Save failed');
-
-    const tier = data.iei_tier || 'Cool';
-    okEl.innerHTML = `✓ Signal saved · New IEI score: <strong>${Math.round(data.iei_score)} (${tier})</strong>`;
+    if (!res.ok) throw new Error(data.detail||'Save failed');
+    okEl.innerHTML = `✓ Signal saved · New IEI score: <strong>${Math.round(data.iei_score)} (${data.iei_tier})</strong>`;
     okEl.style.display = 'block';
-    // Update local visitor score
     state.current.iei_score = data.iei_score;
     state.current.iei_tier = data.iei_tier;
-  } catch(e) {
-    errEl.textContent = e.message;
-    errEl.style.display = 'block';
-  }
-
+  } catch(e) { showMsg('sigErr', e.message); }
   btn.innerHTML = 'Save conversation signal';
   btn.disabled = false;
+}
+
+function showMsg(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.style.display = 'block';
 }
 </script>
 </body>
