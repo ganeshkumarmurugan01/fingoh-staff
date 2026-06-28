@@ -4,147 +4,299 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0D1B3E">
 <title>Fingoh Staff</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F8FC; color: #1A1A2E; min-height: 100vh; }
-  :root { --navy:#0D1B3E; --blue:#2563EB; --green:#16A34A; --red:#DC2626; --orange:#F97316; --muted:#64748B; --light:#F1F5F9; --white:#FFFFFF; }
-  .header { background:var(--navy); color:white; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
-  .header-logo { font-size:16px; font-weight:800; letter-spacing:-0.02em; }
-  .header-sub { font-size:10px; color:rgba(255,255,255,0.5); margin-top:2px; }
-  .staff-badge { background:rgba(255,255,255,0.15); padding:4px 10px; border-radius:99px; font-size:11px; font-weight:600; }
-  .screen { display:none; padding:16px; max-width:480px; margin:0 auto; }
-  .screen.active { display:block; }
-  .card { background:white; border-radius:16px; padding:24px; margin-top:20px; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
-  .card-title { font-size:18px; font-weight:800; color:var(--navy); margin-bottom:4px; }
-  .card-sub { font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5; }
-  label { display:block; font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px; margin-top:14px; }
-  input, select, textarea { width:100%; padding:12px 14px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:14px; font-family:inherit; background:white; outline:none; transition:border-color .15s; appearance:none; }
-  input:focus, select:focus, textarea:focus { border-color:var(--blue); }
-  textarea { resize:none; height:80px; }
-  .btn { width:100%; padding:13px; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:opacity .15s; margin-top:14px; }
-  .btn:disabled { opacity:0.6; cursor:not-allowed; }
-  .btn-primary { background:var(--navy); color:white; }
-  .btn-green { background:var(--green); color:white; }
-  .btn-outline { background:transparent; border:1.5px solid #E2E8F0; color:var(--navy); }
-  .search-wrap { position:relative; margin-bottom:12px; }
-  .search-wrap input { padding-left:38px; }
-  .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:16px; pointer-events:none; }
-  .visitor-card { background:white; border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.06); cursor:pointer; border-left:4px solid transparent; }
-  .visitor-card.Hot { border-left-color:#ef4444; }
-  .visitor-card.Warm { border-left-color:#f97316; }
-  .visitor-card.Cool { border-left-color:#3b82f6; }
-  .visitor-card.Cold { border-left-color:#9ca3af; }
-  .vname { font-size:14px; font-weight:700; color:var(--navy); }
-  .vmeta { font-size:12px; color:var(--muted); margin-top:2px; }
-  .vscore { font-size:22px; font-weight:800; }
-  .vscore.Hot{color:#ef4444;} .vscore.Warm{color:#f97316;} .vscore.Cool{color:#3b82f6;} .vscore.Cold{color:#9ca3af;}
-  .tier-badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700; }
-  .tier-badge.Hot{background:#FEE2E2;color:#991B1B;} .tier-badge.Warm{background:#FEF3C7;color:#92400E;} .tier-badge.Cool{background:#DBEAFE;color:#1E40AF;} .tier-badge.Cold{background:#F1F5F9;color:#475569;}
-  .stars { display:flex; gap:10px; margin-top:8px; }
-  .star { font-size:32px; cursor:pointer; transition:transform .1s; user-select:none; }
-  .star:active { transform:scale(1.2); }
-  .sig-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
-  .sig-btn { padding:10px; border:1.5px solid #E2E8F0; border-radius:10px; background:white; font-size:12px; font-weight:600; color:var(--navy); cursor:pointer; text-align:center; transition:all .12s; }
-  .sig-btn.sel { border-color:var(--blue); background:#EFF6FF; color:var(--blue); }
-  .sig-btn.sel.g { border-color:var(--green); background:#F0FDF4; color:var(--green); }
-  .back-btn { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--navy); background:none; border:none; cursor:pointer; padding:8px 0; margin-bottom:12px; }
-  .empty { text-align:center; padding:48px 24px; color:var(--muted); }
-  .empty-icon { font-size:40px; margin-bottom:10px; }
-  .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-right:6px; }
-  .spinner-dark { border-color:#E2E8F0; border-top-color:var(--navy); }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  .err { background:#FEE2E2; color:#991B1B; padding:10px 14px; border-radius:8px; font-size:12px; margin-top:10px; }
-  .ok { background:#F0FDF4; color:#166534; padding:10px 14px; border-radius:8px; font-size:12px; margin-top:10px; }
-  .event-option { background:white; border:1.5px solid #E2E8F0; border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:all .12s; }
-  .event-option:active { background:#F0F4FF; border-color:var(--blue); }
-  .event-name { font-size:14px; font-weight:700; color:var(--navy); }
-  .event-meta { font-size:12px; color:var(--muted); margin-top:3px; }
-  .step-indicator { display:flex; gap:6px; margin-bottom:20px; }
-  .step { height:3px; border-radius:2px; flex:1; background:#E2E8F0; }
-  .step.active { background:var(--navy); }
-  .step.done { background:var(--green); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F1F5F9; color: #1A1A2E; min-height: 100vh; }
+:root { --navy:#0D1B3E; --blue:#2563EB; --green:#16A34A; --red:#DC2626; --orange:#F97316; --purple:#7C3AED; --teal:#0D9488; --amber:#D97706; --muted:#64748B; --light:#F1F5F9; --white:#FFFFFF; }
+.header { background:var(--navy); color:white; padding:13px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.header-logo { font-size:15px; font-weight:800; letter-spacing:-0.02em; }
+.header-sub { font-size:10px; color:rgba(255,255,255,0.5); margin-top:1px; }
+.screen { display:none; padding:16px; max-width:460px; margin:0 auto; }
+.screen.active { display:block; }
+.card { background:white; border-radius:14px; border:1px solid #E2E8F0; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.05); }
+.section { padding:16px 18px; border-bottom:1px solid #F1F5F9; }
+.section:last-child { border-bottom:none; }
+.step-head { display:flex; align-items:center; gap:8px; margin-bottom:11px; }
+.step-num { width:22px; height:22px; border-radius:50%; background:var(--navy); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:white; flex-shrink:0; }
+.step-num.dim { background:#CBD5E1; }
+.step-label { font-size:13px; font-weight:600; color:var(--navy); }
+.step-sub { font-size:11px; color:var(--muted); margin-left:4px; }
+.dimmed { opacity:0.4; pointer-events:none; }
+input, textarea { width:100%; padding:11px 13px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:13px; font-family:inherit; outline:none; background:white; transition:border-color .15s; }
+input:focus, textarea:focus { border-color:var(--blue); }
+textarea { resize:none; height:80px; }
+.btn { width:100%; padding:13px; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+.btn:disabled { opacity:0.5; cursor:not-allowed; }
+.btn-navy { background:var(--navy); color:white; }
+.btn-green { background:var(--green); color:white; }
+.btn-outline { background:transparent; border:1.5px solid #E2E8F0; color:var(--navy); }
+/* Score grid */
+.score-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+.score-btn { padding:14px 4px; border:2px solid #E2E8F0; border-radius:11px; cursor:pointer; background:white; display:flex; flex-direction:column; align-items:center; gap:3px; transition:all .12s; }
+.score-btn.sel { color:white; }
+.score-num { font-size:20px; font-weight:800; line-height:1; color:var(--muted); }
+.score-lbl { font-size:9px; color:#94A3B8; text-align:center; line-height:1.2; }
+/* Q chips */
+.q-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.q-chip { padding:7px 11px; border:2px solid #E2E8F0; border-radius:99px; font-size:11px; font-weight:600; cursor:pointer; background:white; color:var(--muted); font-family:inherit; display:flex; align-items:center; gap:5px; transition:all .12s; }
+.q-chip.sel { color:white; }
+/* Toggle */
+.toggle-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:9px; border:1.5px solid #E2E8F0; margin-bottom:7px; cursor:pointer; transition:all .15s; }
+.toggle-track { width:40px; height:22px; border-radius:11px; background:#CBD5E1; position:relative; flex-shrink:0; transition:background .18s; }
+.toggle-thumb { width:18px; height:18px; border-radius:50%; background:white; position:absolute; top:2px; left:2px; transition:left .18s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+/* Visitor card */
+.visitor-card { background:white; border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,.06); cursor:pointer; border-left:4px solid transparent; }
+.visitor-card.Hot{border-left-color:#ef4444;} .visitor-card.Warm{border-left-color:#f97316;} .visitor-card.Cool{border-left-color:#3b82f6;} .visitor-card.Cold{border-left-color:#9ca3af;}
+.tier-badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700; }
+.tier-badge.Hot{background:#FEE2E2;color:#991B1B;} .tier-badge.Warm{background:#FEF3C7;color:#92400E;} .tier-badge.Cool{background:#DBEAFE;color:#1E40AF;} .tier-badge.Cold{background:#F1F5F9;color:#475569;}
+.err { background:#FEE2E2; color:#991B1B; padding:10px 14px; border-radius:8px; font-size:12px; margin-top:10px; }
+.ok { background:#F0FDF4; color:#166534; padding:14px; border-radius:10px; font-size:13px; margin-top:10px; text-align:center; }
+.spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin .8s linear infinite; vertical-align:middle; margin-right:6px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.back-btn { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--navy); background:none; border:none; cursor:pointer; padding:8px 0; margin-bottom:12px; }
+.search-drop { border:1px solid #E2E8F0; border-radius:10px; margin-top:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.07); }
+.search-drop-item { padding:10px 13px; cursor:pointer; border-bottom:1px solid #F8FAFC; display:flex; justify-content:space-between; align-items:center; }
+.search-drop-item:hover { background:#F8FAFC; }
+.selected-visitor { margin-top:9px; border-radius:10px; overflow:hidden; border:1px solid #E2E8F0; }
+.sv-header { padding:9px 12px; background:#EFF6FF; display:flex; justify-content:space-between; align-items:center; }
+.sv-scores { padding:6px 12px; background:white; display:flex; gap:12px; font-size:11px; color:var(--muted); }
+.collateral-btns { display:flex; gap:6px; }
+.coll-btn { padding:6px 11px; border:1.5px solid #E2E8F0; border-radius:99px; font-size:11px; font-weight:600; cursor:pointer; background:white; color:var(--muted); font-family:inherit; }
+.urgency-grid { display:flex; gap:6px; }
+.urg-btn { flex:1; padding:8px 6px; border:1.5px solid #E2E8F0; border-radius:9px; font-size:10px; font-weight:600; cursor:pointer; background:white; color:var(--muted); font-family:inherit; text-align:center; }
+.event-opt { background:white; border:1.5px solid #E2E8F0; border-radius:12px; padding:14px 16px; margin-bottom:10px; cursor:pointer; }
+.event-opt:active { background:#F0F4FF; border-color:var(--blue); }
+.done-banner { background:#F0FDF4; border:2px solid #86EFAC; border-radius:16px; padding:44px 24px; text-align:center; }
 </style>
 </head>
 <body>
-
 <div class="header">
   <div>
     <div class="header-logo">Fingoh Staff</div>
     <div class="header-sub" id="headerSub">Visitor intelligence · on the floor</div>
   </div>
-  <div id="staffBadge" style="display:none" class="staff-badge">👤 <span id="staffName"></span></div>
+  <div id="headerRight"></div>
 </div>
 
-<!-- STEP 1: EMAIL -->
+<!-- EMAIL SCREEN -->
 <div class="screen active" id="emailScreen">
-  <div class="card">
-    <div class="step-indicator">
-      <div class="step active" id="s1"></div>
-      <div class="step" id="s2"></div>
-      <div class="step" id="s3"></div>
-    </div>
-    <div class="card-title">Welcome to Fingoh Staff</div>
-    <div class="card-sub">Enter your work email to see your assigned events.</div>
-    <label>Your email</label>
-    <input type="email" id="emailInput" placeholder="you@company.com" autocomplete="email"
-      onkeydown="if(event.key==='Enter')fetchEvents()">
+  <div style="text-align:center;padding:32px 0 20px">
+    <div style="width:56px;height:56px;border-radius:16px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">📱</div>
+    <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:4px">Staff App</h2>
+    <p style="font-size:12px;color:var(--muted)">Enter your work email to see your events</p>
+  </div>
+  <div style="background:white;border-radius:16px;padding:24px;border:1px solid #E2E8F0">
+    <label style="display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Your work email</label>
+    <input type="email" id="emailInput" placeholder="you@company.com" autocomplete="email" onkeydown="if(event.key==='Enter')fetchEvents()">
     <div id="emailErr" class="err" style="display:none"></div>
-    <button class="btn btn-primary" onclick="fetchEvents()" id="emailBtn">Continue →</button>
+    <button class="btn btn-navy" onclick="fetchEvents()" id="emailBtn" style="margin-top:14px">Continue →</button>
   </div>
 </div>
 
-<!-- STEP 2: SELECT EVENT -->
+<!-- EVENT SELECT SCREEN -->
 <div class="screen" id="eventScreen">
-  <div class="card">
-    <div class="step-indicator">
-      <div class="step done"></div>
-      <div class="step active"></div>
-      <div class="step"></div>
-    </div>
-    <div class="card-title">Select your event</div>
-    <div class="card-sub" id="eventCardSub">Choose the event you're working today.</div>
-    <div id="eventList" style="margin-top:4px"></div>
-    <button class="btn btn-outline" onclick="showScreen('emailScreen')" style="margin-top:8px">← Back</button>
+  <div style="margin-bottom:16px">
+    <div style="font-size:16px;font-weight:800;color:var(--navy)">Select your event</div>
+    <div style="font-size:12px;color:var(--muted)">Choose the event you're working today</div>
   </div>
+  <div id="eventList"></div>
+  <button class="btn btn-outline" onclick="showScreen('emailScreen')" style="margin-top:4px">← Back</button>
 </div>
 
-<!-- STEP 3: VISITOR LIST -->
-<div class="screen" id="listScreen">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+<!-- STAFF APP MAIN SCREEN -->
+<div class="screen" id="appScreen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
     <div>
-      <div style="font-size:16px;font-weight:800;color:var(--navy)" id="listTitle">Visitors</div>
-      <div style="font-size:11px;color:var(--muted)" id="visitorCount"></div>
+      <h2 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:2px">Staff app</h2>
+      <p style="font-size:11px;color:var(--muted)" id="appSubtitle"></p>
     </div>
-    <button onclick="doLogout()" style="background:none;border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer">Sign out</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#F0FDF4;border-radius:99px;border:1px solid #86EFAC;font-size:10px;font-weight:700;color:#14532D">
+        <span style="width:5px;height:5px;border-radius:50%;background:#16A34A;display:inline-block"></span>Live
+      </span>
+      <button onclick="doLogout()" style="font-size:11px;color:var(--muted);background:none;border:1px solid #E2E8F0;border-radius:7px;cursor:pointer;padding:4px 10px;font-family:inherit">Sign out</button>
+    </div>
   </div>
-  <div class="search-wrap">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="Search name, company, email…" oninput="filterVisitors()">
-  </div>
-  <div id="visitorList"></div>
-</div>
 
-<!-- VISITOR DETAIL -->
-<div class="screen" id="detailScreen">
-  <button class="back-btn" onclick="showList()">← Back to visitors</button>
-  <div id="detailContent"></div>
+  <div id="doneView" style="display:none" class="done-banner">
+    <div style="font-size:44px;color:#16A34A;margin-bottom:12px">✓</div>
+    <p style="font-size:16px;font-weight:700;color:#14532D;margin-bottom:4px">Signal logged!</p>
+    <p style="font-size:13px;color:#166534" id="doneMsg"></p>
+  </div>
+
+  <div id="formView" class="card">
+    <!-- Step 1: Find visitor -->
+    <div class="section">
+      <div class="step-head">
+        <div class="step-num">1</div>
+        <span class="step-label">Find the visitor</span>
+      </div>
+      <input type="text" id="searchInput" placeholder="Type name or company…" oninput="onSearch()">
+      <div id="searchDrop" style="display:none" class="search-drop"></div>
+      <div id="selVisitor" style="display:none" class="selected-visitor">
+        <div class="sv-header">
+          <div>
+            <p style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:1px" id="selName"></p>
+            <p style="font-size:11px;color:var(--muted);margin:0" id="selMeta"></p>
+          </div>
+          <div style="display:flex;gap:5px" id="selBadges"></div>
+        </div>
+        <div class="sv-scores">
+          <span>IEI: <strong id="selScore" style="color:var(--blue)"></strong></span>
+          <span id="selReason" style="margin-left:auto"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Conversation quality -->
+    <div class="section" id="step2" style="opacity:0.4">
+      <div class="step-head">
+        <div class="step-num dim" id="sn2">2</div>
+        <span class="step-label">Conversation quality</span>
+      </div>
+      <div class="score-grid">
+        <div class="score-btn" onclick="setScore(1)" id="sb1"><span class="score-num">1</span><span class="score-lbl">Pass-through</span></div>
+        <div class="score-btn" onclick="setScore(2)" id="sb2"><span class="score-num">2</span><span class="score-lbl">Polite interest</span></div>
+        <div class="score-btn" onclick="setScore(3)" id="sb3"><span class="score-num">3</span><span class="score-lbl">Engaged</span></div>
+        <div class="score-btn" onclick="setScore(4)" id="sb4"><span class="score-num">4</span><span class="score-lbl">Strong evaluator</span></div>
+        <div class="score-btn" onclick="setScore(5)" id="sb5"><span class="score-num">5</span><span class="score-lbl">Active buyer</span></div>
+      </div>
+      <div id="scoreFeedback" style="display:none;margin-top:8px;padding:6px 12px;border-radius:7px;text-align:center;font-size:12px;font-weight:700"></div>
+    </div>
+
+    <!-- Step 3: Questions -->
+    <div class="section" id="step3" style="opacity:0.4">
+      <div class="step-head">
+        <div class="step-num dim" id="sn3">3</div>
+        <span class="step-label">Questions asked</span>
+        <span class="step-sub">— select all that apply</span>
+      </div>
+      <div class="q-chips" id="qChips">
+        <button class="q-chip" onclick="toggleQ(this,'Pricing')" data-col="#16A34A">$ Pricing</button>
+        <button class="q-chip" onclick="toggleQ(this,'Implementation')" data-col="#2563EB">⚙ Implementation</button>
+        <button class="q-chip" onclick="toggleQ(this,'Technical')" data-col="#7C3AED">🔧 Technical</button>
+        <button class="q-chip" onclick="toggleQ(this,'Competitive')" data-col="#D97706">⚖ Competitive</button>
+        <button class="q-chip" onclick="toggleQ(this,'Timeline / delivery')" data-col="#0D9488">📅 Timeline / delivery</button>
+        <button class="q-chip" onclick="toggleQ(this,'General')" data-col="#94A3B8">💬 General</button>
+      </div>
+      <div id="qFeedback" style="display:none;margin-top:8px;padding:7px 10px;background:var(--light);border-radius:7px;font-size:11px;color:var(--muted)"></div>
+    </div>
+
+    <!-- Step 4: On-site signals -->
+    <div class="section" id="step4" style="opacity:0.4">
+      <div class="step-head">
+        <div class="step-num dim" id="sn4">4</div>
+        <span class="step-label">On-site behaviour signals</span>
+      </div>
+      <div class="toggle-row" id="togRet" onclick="toggleSignal('ret')">
+        <div style="display:flex;gap:9px;align-items:center">
+          <span style="font-size:16px;width:24px;text-align:center">↩</span>
+          <div><p style="font-size:12px;font-weight:600;margin:0" id="togRetLabel">Return visitor</p><p style="font-size:11px;color:var(--muted);margin:0">Second distinct visit to your booth today — strongest on-site signal</p></div>
+        </div>
+        <div class="toggle-track" id="trackRet"><div class="toggle-thumb" id="thumbRet"></div></div>
+      </div>
+      <div class="toggle-row" id="togDemo" onclick="toggleSignal('demo')">
+        <div style="display:flex;gap:9px;align-items:center">
+          <span style="font-size:16px;width:24px;text-align:center">▶</span>
+          <div><p style="font-size:12px;font-weight:600;margin:0" id="togDemoLabel">Demo attended + Q&A</p><p style="font-size:11px;color:var(--muted);margin:0">Visitor attended your product demo and stayed for questions</p></div>
+        </div>
+        <div class="toggle-track" id="trackDemo"><div class="toggle-thumb" id="thumbDemo"></div></div>
+      </div>
+      <div class="toggle-row" id="togBadge" onclick="toggleSignal('badge')">
+        <div style="display:flex;gap:9px;align-items:center">
+          <span style="font-size:16px;width:24px;text-align:center">◉</span>
+          <div><p style="font-size:12px;font-weight:600;margin:0">Badge scanned</p><p style="font-size:11px;color:var(--muted);margin:0">Badge scan confirmed — physical presence at booth logged</p></div>
+        </div>
+        <div class="toggle-track" id="trackBadge"><div class="toggle-thumb" id="thumbBadge"></div></div>
+      </div>
+      <div class="toggle-row" id="togBG" onclick="toggleSignal('bg')">
+        <div style="display:flex;gap:9px;align-items:center">
+          <span style="font-size:16px;width:24px;text-align:center">👥</span>
+          <div><p style="font-size:12px;font-weight:600;margin:0">Buying group present</p><p style="font-size:11px;color:var(--muted);margin:0">Colleague or decision-making partner attended the conversation</p></div>
+        </div>
+        <div class="toggle-track" id="trackBG"><div class="toggle-thumb" id="thumbBG"></div></div>
+      </div>
+    </div>
+
+    <!-- Step 5: Meeting & collateral -->
+    <div class="section" id="step5" style="opacity:0.4">
+      <div class="step-head">
+        <div class="step-num dim" id="sn5">5</div>
+        <span class="step-label">Meeting & collateral</span>
+        <span class="step-sub">— optional</span>
+      </div>
+      <div class="toggle-row" id="togMtg" onclick="toggleSignal('mtg')">
+        <div style="display:flex;gap:9px;align-items:center">
+          <span style="font-size:16px;width:24px;text-align:center">📅</span>
+          <div><p style="font-size:12px;font-weight:600;margin:0">Follow-up meeting booked</p><p style="font-size:11px;color:var(--muted);margin:0">Visitor agreed to a follow-up meeting or demo</p></div>
+        </div>
+        <div class="toggle-track" id="trackMtg"><div class="toggle-thumb" id="thumbMtg"></div></div>
+      </div>
+      <p style="font-size:11px;font-weight:600;color:var(--muted);margin:10px 0 7px">Collateral requested</p>
+      <div class="collateral-btns">
+        <button class="coll-btn" onclick="setColl(this,'none')" id="coll_none">None</button>
+        <button class="coll-btn" onclick="setColl(this,'generic')" id="coll_generic">Generic brochure</button>
+        <button class="coll-btn" onclick="setColl(this,'specific')" id="coll_specific">Specific asset</button>
+      </div>
+      <div id="collHint" style="display:none;font-size:10px;color:#E11D48;margin-top:4px;font-style:italic">Specific asset = pricing sheet, ROI calculator — high intent signal (+5 pts)</div>
+    </div>
+
+    <!-- Step 6: Buying urgency -->
+    <div class="section" id="step6" style="opacity:0.4">
+      <div class="step-head">
+        <div class="step-num dim" id="sn6">6</div>
+        <span class="step-label">Perceived buying urgency</span>
+        <span class="step-sub">— your assessment</span>
+      </div>
+      <div class="urgency-grid">
+        <button class="urg-btn" onclick="setUrgency(this,'low')" id="urg_low">Low — exploring</button>
+        <button class="urg-btn" onclick="setUrgency(this,'medium')" id="urg_medium">Medium — evaluating</button>
+        <button class="urg-btn" onclick="setUrgency(this,'high')" id="urg_high">High — ready to buy</button>
+      </div>
+    </div>
+
+    <!-- Step 7: Notes -->
+    <div class="section" id="step7" style="opacity:0.4">
+      <div class="step-head">
+        <div class="step-num dim" id="sn7">7</div>
+        <span class="step-label">Conversation notes</span>
+        <span class="step-sub">— optional</span>
+      </div>
+      <textarea id="notesField" placeholder="Key points, specific needs, follow-up actions…"></textarea>
+    </div>
+
+    <!-- Submit -->
+    <div class="section">
+      <div id="submitErr" class="err" style="display:none"></div>
+      <button class="btn btn-green" onclick="submitSignal()" id="submitBtn">Log conversation signal →</button>
+    </div>
+  </div>
 </div>
 
 <script>
 const API = "https://web-production-93e78d.up.railway.app/api/v1";
-let state = { staff:null, event_id:null, event_name:null, visitors:[], current:null, selectedStar:0 };
+const scoreColors = {1:"#94A3B8",2:"#64748B",3:"#EAB308",4:"#3B82F6",5:"#16A34A"};
+const scoreLabels = {1:"Pass-through",2:"Polite interest",3:"Engaged",4:"Strong evaluator",5:"Active buyer"};
+const toggleColors = {ret:"#16A34A",demo:"#2563EB",badge:"#64748B",bg:"#7C3AED",mtg:"#0D9488"};
+
+let state = {
+  staff:null, event_id:null, event_name:null,
+  visitors:[], sel:null, query:"",
+  score:null, qTypes:[], ret:false, demo:false, badge:false, bg:false, mtg:false,
+  collateral:"", urgency:"", notes:"", submitting:false
+};
+let cachedEvents = [];
 
 // Restore session
-window.addEventListener('load', ()=>{
+window.addEventListener('load',()=>{
   try {
-    const s = JSON.parse(sessionStorage.getItem('fingoh_staff') || 'null');
-    if (s?.staff && s?.event_id) {
+    const s = JSON.parse(sessionStorage.getItem('fingoh_staff')||'null');
+    if(s?.staff && s?.event_id) {
       Object.assign(state, s);
       updateHeader();
-      showScreen('listScreen');
+      showScreen('appScreen');
       loadVisitors();
     }
   } catch {}
@@ -152,7 +304,7 @@ window.addEventListener('load', ()=>{
 
 function saveSession() {
   sessionStorage.setItem('fingoh_staff', JSON.stringify({
-    staff: state.staff, event_id: state.event_id, event_name: state.event_name
+    staff:state.staff, event_id:state.event_id, event_name:state.event_name
   }));
 }
 
@@ -164,261 +316,244 @@ function showScreen(id) {
 
 function updateHeader() {
   document.getElementById('headerSub').textContent = state.event_name || 'Staff App';
-  document.getElementById('staffBadge').style.display = 'flex';
-  document.getElementById('staffName').textContent = state.staff?.name || state.staff?.email || '';
+  document.getElementById('headerRight').innerHTML = `<span style="background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600;color:white">👤 ${state.staff?.name||''}</span>`;
 }
 
 function doLogout() {
   sessionStorage.removeItem('fingoh_staff');
-  state = { staff:null, event_id:null, event_name:null, visitors:[], current:null, selectedStar:0 };
-  document.getElementById('staffBadge').style.display = 'none';
+  Object.assign(state, {staff:null,event_id:null,event_name:null,visitors:[],sel:null});
   document.getElementById('headerSub').textContent = 'Visitor intelligence · on the floor';
+  document.getElementById('headerRight').innerHTML = '';
   document.getElementById('emailInput').value = '';
   showScreen('emailScreen');
 }
 
-// ── Step 1: Fetch events for email ──────────────────────────────────────────
+// ── Step 1: Email → Events ───────────────────────────────────────────────────
 async function fetchEvents() {
   const email = document.getElementById('emailInput').value.trim();
   const errEl = document.getElementById('emailErr');
   const btn = document.getElementById('emailBtn');
-  errEl.style.display = 'none';
-  if (!email || !email.includes('@')) { showMsg('emailErr','Please enter a valid email'); return; }
+  errEl.style.display='none';
+  if(!email||!email.includes('@')) { showMsg('emailErr','Please enter a valid email'); return; }
 
-  btn.innerHTML = '<span class="spinner"></span>Looking up events…';
-  btn.disabled = true;
+  btn.innerHTML='<span class="spinner"></span>Looking up events…'; btn.disabled=true;
+  state.staffEmail = email;
   try {
     const res = await fetch(`${API}/events/public/by-email/${encodeURIComponent(email)}`);
     const data = await res.json();
-    if (!res.ok || !data.length) { showMsg('emailErr', data.detail || 'No events found for this email. Check with your manager.'); return; }
-
-    state.staffEmail = email;
-    renderEventList(data);
+    if(!res.ok||!data.length) { showMsg('emailErr', data.detail||'No events found for this email.'); btn.innerHTML='Continue →'; btn.disabled=false; return; }
+    cachedEvents = data;
+    document.getElementById('eventList').innerHTML = data.map((ev,i)=>`
+      <div class="event-opt" onclick="selectEvent(${i})">
+        <div style="font-size:14px;font-weight:700;color:var(--navy)">${ev.name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">${ev.venue||''} ${ev.date_from?'· '+ev.date_from.slice(0,10):''}</div>
+      </div>
+    `).join('');
     showScreen('eventScreen');
-    document.getElementById('eventCardSub').textContent = `Hi! Choose the event you're working today.`;
-  } catch(e) { showMsg('emailErr','Connection error. Check your internet and try again.'); }
-  btn.innerHTML = 'Continue →';
-  btn.disabled = false;
+  } catch(e) { showMsg('emailErr','Connection error. Try again.'); }
+  btn.innerHTML='Continue →'; btn.disabled=false;
 }
 
-let cachedEvents = [];
-function renderEventList(events) {
-  cachedEvents = events;
-  document.getElementById('eventList').innerHTML = events.map((ev,i) => `
-    <div class="event-option" onclick="selectEvent(${i})">
-      <div class="event-name">${ev.name}</div>
-      <div class="event-meta">${ev.venue || ''} ${ev.date_from ? '· ' + ev.date_from.slice(0,10) : ''}</div>
-    </div>
-  `).join('');
-}
-
-// ── Step 2: Login with selected event ───────────────────────────────────────
 async function selectEvent(idx) {
   const ev = cachedEvents[idx];
-  const event_id = ev.id;
-  const event_name = ev.name;
-  const email = state.staffEmail;
   try {
-    const res = await fetch(`${API}/staff/verify-login`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ email, event_id })
+    const res = await fetch(`${API}/staff/verify-login`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:state.staffEmail, event_id:ev.id})
     });
     const data = await res.json();
-    if (!res.ok) { alert(data.detail || 'Login failed'); return; }
-
-    state.staff = data;
-    state.event_id = event_id;
-    state.event_name = event_name;
-    saveSession();
-    updateHeader();
-
-    document.getElementById('listTitle').textContent = event_name;
-    showScreen('listScreen');
+    if(!res.ok) { alert(data.detail||'Login failed'); return; }
+    state.staff = data; state.event_id = ev.id; state.event_name = ev.name;
+    saveSession(); updateHeader();
+    document.getElementById('appSubtitle').innerHTML = `${ev.name} · Logging as <strong style="color:var(--navy)">${data.name}</strong>`;
+    showScreen('appScreen');
     loadVisitors();
   } catch(e) { alert('Connection error'); }
 }
 
-// ── Visitor list ─────────────────────────────────────────────────────────────
+// ── Visitors ─────────────────────────────────────────────────────────────────
 async function loadVisitors() {
-  document.getElementById('visitorList').innerHTML = '<div class="empty"><div style="width:24px;height:24px;border:2px solid #E2E8F0;border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px"></div><div>Loading visitors…</div></div>';
   try {
     const res = await fetch(`${API}/audience/visitors/${state.event_id}`);
-    if (!res.ok) throw new Error('Failed');
-    state.visitors = await res.json();
-    document.getElementById('visitorCount').textContent = `${state.visitors.length} visitors · sorted by IEI score`;
-    renderVisitors(state.visitors);
-  } catch(e) {
-    document.getElementById('visitorList').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div>Could not load visitors</div></div>';
-  }
+    if(res.ok) state.visitors = await res.json();
+  } catch {}
 }
 
-function filterVisitors() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  renderVisitors(q ? state.visitors.filter(v =>
-    (v.name||'').toLowerCase().includes(q) ||
-    (v.company||'').toLowerCase().includes(q) ||
-    (v.email||'').toLowerCase().includes(q)
-  ) : state.visitors);
-}
-
-function renderVisitors(list) {
-  if (!list.length) {
-    document.getElementById('visitorList').innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>No visitors found</div></div>';
-    return;
-  }
-  const el = document.getElementById('visitorList');
-  el.innerHTML = list.map((v,i) => `
-    <div class="visitor-card ${v.iei_tier||'Cold'}" id="vc_${i}">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="flex:1">
-          <div class="vname">${v.name||v.email||'Unknown'}</div>
-          <div class="vmeta">${[v.designation,v.company].filter(Boolean).join(' · ')}</div>
-          <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
-            <span class="tier-badge ${v.iei_tier||'Cold'}">${v.iei_tier||'Unscored'}</span>
-            ${v.raw_data?.conv_quality ? `<span style="font-size:10px;color:var(--muted)">${'★'.repeat(Math.round(v.raw_data.conv_quality))}</span>` : ''}
-            ${v.raw_data?.demo_attendance ? '<span style="font-size:10px;color:var(--green);font-weight:600">✓ Demo</span>' : ''}
-          </div>
-        </div>
-        <div style="text-align:right;padding-left:12px">
-          <div class="vscore ${v.iei_tier||'Cold'}">${Math.round(v.iei_score||0)}</div>
-          <div style="font-size:9px;color:var(--muted)">IEI</div>
-        </div>
-      </div>
+function onSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  state.query = q;
+  const drop = document.getElementById('searchDrop');
+  const selDiv = document.getElementById('selVisitor');
+  if(!q) { drop.style.display='none'; return; }
+  const matches = state.visitors.filter(v=>
+    (v.name||'').toLowerCase().includes(q)||(v.company||'').toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)
+  ).slice(0,6);
+  if(!matches.length) { drop.style.display='none'; return; }
+  drop.innerHTML = matches.map((v,i)=>`
+    <div class="search-drop-item" id="ddi_${i}">
+      <div><p style="font-size:12px;font-weight:600;color:var(--navy);margin:0">${v.name||v.email}</p><p style="font-size:11px;color:var(--muted);margin:0">${v.company||''}</p></div>
+      <span class="tier-badge ${v.iei_tier||'Cold'}">${v.iei_tier||'?'}</span>
     </div>
   `).join('');
-  list.forEach((v,i) => {
-    document.getElementById(`vc_${i}`).onclick = () => showDetail(v);
+  matches.forEach((v,i)=>{ document.getElementById(`ddi_${i}`).onclick=()=>selectVisitor(v); });
+  drop.style.display='block';
+  selDiv.style.display='none';
+}
+
+function selectVisitor(v) {
+  state.sel = v;
+  document.getElementById('searchInput').value = v.name||v.email;
+  document.getElementById('searchDrop').style.display='none';
+  document.getElementById('selName').textContent = v.name||v.email;
+  document.getElementById('selMeta').textContent = [v.designation,v.company].filter(Boolean).join(' · ');
+  document.getElementById('selBadges').innerHTML = `<span class="tier-badge ${v.iei_tier||'Cold'}">${v.iei_tier||'?'}</span>`;
+  document.getElementById('selScore').textContent = Math.round(v.iei_score||0);
+  document.getElementById('selScore').style.color = v.iei_tier==='Hot'?'#ef4444':v.iei_tier==='Warm'?'#f97316':v.iei_tier==='Cool'?'#3b82f6':'#9ca3af';
+  if(v.raw_data?.primary_reason) {
+    document.getElementById('selReason').textContent = v.raw_data.primary_reason;
+    document.getElementById('selReason').style.cssText = 'font-size:10px;padding:1px 6px;border-radius:99px;background:#DBEAFE;color:#1E3A8A;font-weight:600';
+  }
+  document.getElementById('selVisitor').style.display='block';
+  // Enable all steps
+  ['step2','step3','step4','step5','step6','step7'].forEach(id=>{ document.getElementById(id).style.opacity='1'; document.getElementById(id).style.pointerEvents='auto'; });
+  ['sn2','sn3','sn4','sn5','sn6','sn7'].forEach(id=>{ document.getElementById(id).classList.remove('dim'); });
+}
+
+// ── Score ───────────────────────────────────────────────────────────────────
+function setScore(n) {
+  state.score = n;
+  [1,2,3,4,5].forEach(i=>{
+    const btn = document.getElementById(`sb${i}`);
+    if(i===n) {
+      btn.style.borderColor = scoreColors[n];
+      btn.style.background = scoreColors[n];
+      btn.querySelector('.score-num').style.color='white';
+      btn.querySelector('.score-lbl').style.color='white';
+    } else {
+      btn.style.borderColor='#E2E8F0'; btn.style.background='white';
+      btn.querySelector('.score-num').style.color='var(--muted)';
+      btn.querySelector('.score-lbl').style.color='#94A3B8';
+    }
   });
+  const fb = document.getElementById('scoreFeedback');
+  fb.style.display='block'; fb.textContent=scoreLabels[n];
+  fb.style.background=scoreColors[n]+'20'; fb.style.color=scoreColors[n];
 }
 
-// ── Visitor detail ───────────────────────────────────────────────────────────
-function showList() { showScreen('listScreen'); loadVisitors(); }
-
-function showDetail(v) {
-  state.current = v;
-  state.selectedStar = v.raw_data?.conv_quality || 0;
-  const tier = v.iei_tier || 'Cold';
-  const tierColors = {Hot:'#ef4444',Warm:'#f97316',Cool:'#3b82f6',Cold:'#9ca3af'};
-  const raw = v.raw_data || {};
-
-  document.getElementById('detailContent').innerHTML = `
-    <div style="background:linear-gradient(135deg,#0D1B3E,#1E3A8A);border-radius:14px;padding:18px;margin-bottom:14px;color:white">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0">
-          ${(v.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
-        </div>
-        <div style="flex:1">
-          <div style="font-size:16px;font-weight:700">${v.name||v.email}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.55)">${[v.designation,v.company].filter(Boolean).join(' · ')}</div>
-          <div style="margin-top:6px"><span class="tier-badge ${tier}">${tier}</span></div>
-        </div>
-        <div style="text-align:center;flex-shrink:0">
-          <div style="font-size:38px;font-weight:800;color:${tierColors[tier]}">${Math.round(v.iei_score||0)}</div>
-          <div style="font-size:9px;color:rgba(255,255,255,0.4)">IEI SCORE</div>
-        </div>
-      </div>
-      ${v.email?`<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1)">${v.email}</div>`:''}
-    </div>
-
-    <div style="background:white;border-radius:14px;padding:18px;box-shadow:0 1px 6px rgba(0,0,0,0.06)">
-      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px">Log conversation</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Capture signals to update this visitor's IEI score in real time.</div>
-
-      <label>Conversation quality</label>
-      <div class="stars" id="starsRow">
-        ${[1,2,3,4,5].map(n=>`<span class="star" onclick="setStar(${n})" id="star${n}">${n<=(raw.conv_quality||0)?'★':'☆'}</span>`).join('')}
-      </div>
-
-      <label>Questions asked</label>
-      <div class="sig-grid" id="qGrid">
-        ${['Pricing','Technical','Implementation','Competitive','General'].map(q=>`<div class="sig-btn${raw.questions_type===q.toLowerCase()?' sel':''}" onclick="selBtn('qGrid',this,'${q.toLowerCase()}')">${q}</div>`).join('')}
-      </div>
-
-      <label>Demo attended?</label>
-      <div class="sig-grid" id="dGrid">
-        <div class="sig-btn${raw.demo_attendance?' sel g':''}" onclick="selBtn('dGrid',this,'yes')">✓ Yes</div>
-        <div class="sig-btn${raw.demo_attendance===false?' sel':''}" onclick="selBtn('dGrid',this,'no')">✗ No</div>
-      </div>
-
-      <label>Collateral requested</label>
-      <div class="sig-grid" id="cGrid">
-        ${['Specific','Generic','None'].map(c=>`<div class="sig-btn${raw.collateral_requested===c.toLowerCase()?' sel':''}" onclick="selBtn('cGrid',this,'${c.toLowerCase()}')">${c}</div>`).join('')}
-      </div>
-
-      <label>Return visit?</label>
-      <div class="sig-grid" id="rGrid">
-        <div class="sig-btn${raw.return_visit?' sel g':''}" onclick="selBtn('rGrid',this,'yes')">✓ Came back</div>
-        <div class="sig-btn${raw.return_visit===false?' sel':''}" onclick="selBtn('rGrid',this,'no')">First visit</div>
-      </div>
-
-      <label>Notes</label>
-      <textarea id="notesField" placeholder="Key points, specific needs, follow-up actions…">${raw.notes||''}</textarea>
-
-      <div id="sigErr" class="err" style="display:none"></div>
-      <div id="sigOk" class="ok" style="display:none"></div>
-      <button class="btn btn-green" onclick="submitSignal()" id="submitBtn">Save conversation signal</button>
-    </div>
-  `;
-  showScreen('detailScreen');
+// ── Q types ─────────────────────────────────────────────────────────────────
+function toggleQ(btn, q) {
+  const idx = state.qTypes.indexOf(q);
+  if(idx>-1) { state.qTypes.splice(idx,1); btn.classList.remove('sel'); btn.style.background='white'; btn.style.borderColor='#E2E8F0'; btn.style.color='var(--muted)'; }
+  else { state.qTypes.push(q); const col=btn.dataset.col; btn.classList.add('sel'); btn.style.background=col; btn.style.borderColor=col; btn.style.color='white'; }
+  updateQFeedback();
 }
 
-function setStar(n) {
-  state.selectedStar = n;
-  [1,2,3,4,5].forEach(i => document.getElementById(`star${i}`).textContent = i<=n?'★':'☆');
+function updateQFeedback() {
+  const fb = document.getElementById('qFeedback');
+  if(!state.qTypes.length) { fb.style.display='none'; return; }
+  const qt = state.qTypes;
+  let msg='', col='var(--muted)';
+  if(qt.includes('Pricing')&&qt.includes('Implementation')) { msg='Active evaluation — strong buying intent'; col='#16A34A'; }
+  else if(qt.includes('Pricing')) { msg='Commercial interest confirmed'; col='#2563EB'; }
+  else if(qt.includes('Implementation')) { msg='Planning adoption — strong buying stage'; col='#2563EB'; }
+  else if(qt.includes('Technical')) { msg='Technical evaluation in progress'; col='#7C3AED'; }
+  else if(qt.includes('Competitive')) { msg='Market comparison — flag for competitive intel'; col='#D97706'; }
+  else { msg='General interest'; }
+  fb.style.display='block'; fb.innerHTML=`<span style="font-weight:600;color:var(--navy)">Signal read: </span><span style="color:${col}">${msg}</span>`;
 }
 
-function selBtn(gridId, el, val) {
-  document.querySelectorAll(`#${gridId} .sig-btn`).forEach(b=>b.classList.remove('sel','g'));
-  el.classList.add('sel');
-  if (val==='yes') el.classList.add('g');
-  el.dataset.val = val;
+// ── Toggles ─────────────────────────────────────────────────────────────────
+function toggleSignal(key) {
+  state[key] = !state[key];
+  const on = state[key];
+  const col = toggleColors[key] || '#64748B';
+  const track = document.getElementById(`track${key.charAt(0).toUpperCase()+key.slice(1)}`);
+  const thumb = document.getElementById(`thumb${key.charAt(0).toUpperCase()+key.slice(1)}`);
+  const row = document.getElementById(`tog${key.charAt(0).toUpperCase()+key.slice(1)}`);
+  if(track) { track.style.background = on ? col : '#CBD5E1'; }
+  if(thumb) { thumb.style.left = on ? '20px' : '2px'; }
+  if(row) { row.style.borderColor = on ? col+'60' : '#E2E8F0'; row.style.background = on ? col+'08' : 'white'; }
 }
 
-function getVal(gridId) {
-  const el = document.querySelector(`#${gridId} .sig-btn.sel`);
-  return el?.dataset?.val || el?.textContent?.trim()?.toLowerCase() || null;
+// ── Collateral ───────────────────────────────────────────────────────────────
+function setColl(btn, val) {
+  state.collateral = state.collateral===val ? '' : val;
+  ['none','generic','specific'].forEach(v=>{
+    const b=document.getElementById(`coll_${v}`);
+    b.style.borderColor='#E2E8F0'; b.style.background='white'; b.style.color='var(--muted)';
+  });
+  if(state.collateral) {
+    const col = val==='specific'?'#E11D48':val==='generic'?'#64748B':'#94A3B8';
+    btn.style.borderColor=col; btn.style.background=col; btn.style.color='white';
+    document.getElementById('collHint').style.display = val==='specific'?'block':'none';
+  } else { document.getElementById('collHint').style.display='none'; }
 }
 
+// ── Urgency ──────────────────────────────────────────────────────────────────
+function setUrgency(btn, val) {
+  state.urgency = state.urgency===val ? '' : val;
+  const cols = {low:'#64748B',medium:'#EAB308',high:'#16A34A'};
+  ['low','medium','high'].forEach(v=>{
+    const b=document.getElementById(`urg_${v}`);
+    b.style.borderColor='#E2E8F0'; b.style.background='white'; b.style.color='var(--muted)';
+  });
+  if(state.urgency) {
+    const col=cols[val]; btn.style.borderColor=col; btn.style.background=col; btn.style.color='white';
+  }
+}
+
+// ── Submit ───────────────────────────────────────────────────────────────────
 async function submitSignal() {
-  const btn = document.getElementById('submitBtn');
-  const errEl = document.getElementById('sigErr');
-  const okEl = document.getElementById('sigOk');
-  errEl.style.display = 'none'; okEl.style.display = 'none';
+  const errEl=document.getElementById('submitErr');
+  const btn=document.getElementById('submitBtn');
+  errEl.style.display='none';
+  if(!state.sel) { showMsg('submitErr','Please find and select a visitor first.'); return; }
+  if(!state.score) { showMsg('submitErr','Please rate the conversation quality.'); return; }
 
-  if (!state.selectedStar) { showMsg('sigErr','Please rate the conversation quality (tap the stars).'); return; }
-
-  const payload = {
-    email:                state.current.email,
-    conv_quality:         state.selectedStar,
-    questions_type:       getVal('qGrid') || 'general',
-    demo_attendance:      getVal('dGrid') === 'yes',
-    collateral_requested: getVal('cGrid') || 'none',
-    return_visit:         getVal('rGrid') === 'yes',
-    notes:                document.getElementById('notesField').value.trim(),
-  };
-
-  btn.innerHTML = '<span class="spinner"></span>Saving…';
-  btn.disabled = true;
+  btn.innerHTML='<span class="spinner"></span>Saving…'; btn.disabled=true;
   try {
-    const res = await fetch(`${API}/audience/log-signal/${state.event_id}`, {
+    const payload = {
+      email: state.sel.email,
+      conv_quality: state.score,
+      questions_type: state.qTypes[0]?.toLowerCase().replace(' / ','_') || 'general',
+      demo_attendance: state.demo,
+      collateral_requested: state.collateral||'none',
+      return_visit: state.ret,
+      badge_scan: state.badge,
+      buying_group: state.bg,
+      meeting_booked: state.mtg,
+      urgency: state.urgency,
+      notes: document.getElementById('notesField').value.trim(),
+    };
+    const res = await fetch(`${API}/audience/log-signal/${state.event_id}`,{
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail||'Save failed');
-    okEl.innerHTML = `✓ Signal saved · New IEI score: <strong>${Math.round(data.iei_score)} (${data.iei_tier})</strong>`;
-    okEl.style.display = 'block';
-    state.current.iei_score = data.iei_score;
-    state.current.iei_tier = data.iei_tier;
-  } catch(e) { showMsg('sigErr', e.message); }
-  btn.innerHTML = 'Save conversation signal';
-  btn.disabled = false;
+    if(!res.ok) throw new Error(data.detail||'Save failed');
+
+    document.getElementById('formView').style.display='none';
+    document.getElementById('doneMsg').innerHTML = `${state.sel.name}'s IEI score updated to <strong>${Math.round(data.iei_score)} (${data.iei_tier})</strong>`;
+    document.getElementById('doneView').style.display='block';
+    resetForm();
+    setTimeout(()=>{ document.getElementById('doneView').style.display='none'; document.getElementById('formView').style.display='block'; }, 2500);
+  } catch(e) { showMsg('submitErr', e.message); }
+  btn.innerHTML='Log conversation signal →'; btn.disabled=false;
 }
 
-function showMsg(id, msg) {
-  const el = document.getElementById(id);
-  el.textContent = msg; el.style.display = 'block';
+function resetForm() {
+  state.sel=null; state.score=null; state.qTypes=[]; state.ret=false; state.demo=false;
+  state.badge=false; state.bg=false; state.mtg=false; state.collateral=''; state.urgency=''; 
+  document.getElementById('searchInput').value='';
+  document.getElementById('selVisitor').style.display='none';
+  document.getElementById('notesField').value='';
+  [1,2,3,4,5].forEach(i=>{ const b=document.getElementById(`sb${i}`); b.style.borderColor='#E2E8F0'; b.style.background='white'; b.querySelector('.score-num').style.color='var(--muted)'; b.querySelector('.score-lbl').style.color='#94A3B8'; });
+  document.getElementById('scoreFeedback').style.display='none';
+  document.getElementById('qFeedback').style.display='none';
+  document.querySelectorAll('.q-chip').forEach(b=>{ b.classList.remove('sel'); b.style.background='white'; b.style.borderColor='#E2E8F0'; b.style.color='var(--muted)'; });
+  ['step2','step3','step4','step5','step6','step7'].forEach(id=>{ document.getElementById(id).style.opacity='0.4'; document.getElementById(id).style.pointerEvents='none'; });
 }
+
+function showMsg(id,msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
 </script>
 </body>
 </html>
