@@ -667,7 +667,7 @@ function setMode(mode) {
 }
 
 function startVoice() {
-  if(!(\'webkitSpeechRecognition\' in window || 'SpeechRecognition' in window)) {
+  if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
     alert('Voice recording not supported on this browser. Please use Chrome on Android or Safari on iOS.'); return;
   }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
