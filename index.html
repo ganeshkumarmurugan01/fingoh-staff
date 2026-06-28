@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0D1B3E">
+<title>Fingoh Staff App</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F8FC; color: #1A1A2E; min-height: 100vh; }
+  :root { --navy: #0D1B3E; --blue: #2563EB; --green: #16A34A; --red: #DC2626; --orange: #F97316; --muted: #64748B; --light: #F1F5F9; --white: #FFFFFF; }
+
+  /* Header */
+  .header { background: var(--navy); color: white; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-logo { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+  .header-event { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .staff-badge { background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+
+  /* Screens */
+  .screen { display: none; padding: 16px; max-width: 480px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* Login */
+  .login-card { background: white; border-radius: 16px; padding: 28px 24px; margin-top: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .login-title { font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 6px; }
+  .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  /* Form elements */
+  label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; margin-top: 14px; }
+  input, select, textarea { width: 100%; padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 10px; font-size: 14px; font-family: inherit; background: white; outline: none; transition: border-color .15s; }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+  textarea { resize: none; height: 80px; }
+
+  /* Buttons */
+  .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s; margin-top: 16px; }
+  .btn:active { opacity: 0.85; }
+  .btn-primary { background: var(--navy); color: white; }
+  .btn-green { background: var(--green); color: white; }
+  .btn-outline { background: transparent; border: 1.5px solid #E2E8F0; color: var(--navy); margin-top: 8px; }
+
+  /* Search */
+  .search-bar { position: relative; margin-bottom: 14px; }
+  .search-bar input { padding-left: 38px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+
+  /* Visitor cards */
+  .visitor-card { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; border-left: 4px solid transparent; transition: all .12s; }
+  .visitor-card:active { opacity: 0.85; }
+  .visitor-card.Hot { border-left-color: #ef4444; }
+  .visitor-card.Warm { border-left-color: #f97316; }
+  .visitor-card.Cool { border-left-color: #3b82f6; }
+  .visitor-card.Cold { border-left-color: #9ca3af; }
+  .visitor-name { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .visitor-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .visitor-score { font-size: 20px; font-weight: 800; }
+  .visitor-score.Hot { color: #ef4444; }
+  .visitor-score.Warm { color: #f97316; }
+  .visitor-score.Cool { color: #3b82f6; }
+  .visitor-score.Cold { color: #9ca3af; }
+  .tier-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+  .tier-badge.Hot { background: #FEE2E2; color: #991B1B; }
+  .tier-badge.Warm { background: #FEF3C7; color: #92400E; }
+  .tier-badge.Cool { background: #DBEAFE; color: #1E40AF; }
+  .tier-badge.Cold { background: #F1F5F9; color: #475569; }
+
+  /* Stars */
+  .stars { display: flex; gap: 8px; margin-top: 6px; }
+  .star { font-size: 28px; cursor: pointer; transition: transform .1s; }
+  .star:active { transform: scale(1.2); }
+
+  /* Signal buttons */
+  .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .signal-btn { padding: 10px; border: 1.5px solid #E2E8F0; border-radius: 10px; background: white; font-size: 12px; font-weight: 600; color: var(--navy); cursor: pointer; text-align: center; transition: all .12s; }
+  .signal-btn.selected { border-color: var(--blue); background: #EFF6FF; color: var(--blue); }
+  .signal-btn.selected.green { border-color: var(--green); background: #F0FDF4; color: var(--green); }
+
+  /* Score update banner */
+  .score-banner { background: linear-gradient(135deg, #0D1B3E, #1E3A8A); color: white; border-radius: 12px; padding: 16px; margin-bottom: 14px; text-align: center; }
+  .score-banner .big { font-size: 48px; font-weight: 800; letter-spacing: -0.03em; }
+
+  /* Back button */
+  .back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--navy); background: none; border: none; cursor: pointer; padding: 8px 0; margin-bottom: 12px; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* Loading */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg { background: #FEE2E2; color: #991B1B; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 12px; }
+  .success-msg { background: #F0FDF4; color: #166534; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">Fingoh Staff</div>
+    <div class="header-event" id="headerEvent">Sign in to continue</div>
+  </div>
+  <div id="staffBadge" style="display:none" class="staff-badge">👤 <span id="staffName"></span></div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div class="screen active" id="loginScreen">
+  <div class="login-card">
+    <div class="login-title">Staff Login</div>
+    <div class="login-sub">Enter your email and event ID to access your visitor queue.</div>
+    <label>Event ID</label>
+    <input type="text" id="loginEventId" placeholder="Paste event ID from organiser" autocomplete="off">
+    <label>Your email</label>
+    <input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email">
+    <div id="loginError" class="error-msg" style="display:none"></div>
+    <button class="btn btn-primary" onclick="doLogin()">
+      <span id="loginBtnText">Sign in →</span>
+    </button>
+  </div>
+</div>
+
+<!-- VISITOR LIST SCREEN -->
+<div class="screen" id="listScreen">
+  <div style="margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+    <div>
+      <div style="font-size:16px;font-weight:800;color:var(--navy)">Visitor Queue</div>
+      <div style="font-size:11px;color:var(--muted)" id="visitorCount">Loading…</div>
+    </div>
+    <button class="btn-outline" style="width:auto;padding:6px 14px;margin:0;font-size:12px;border-radius:8px;cursor:pointer" onclick="doLogout()">Sign out</button>
+  </div>
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search name, company, email…" oninput="filterVisitors()">
+  </div>
+  <div id="visitorList"></div>
+</div>
+
+<!-- VISITOR DETAIL + LOG SCREEN -->
+<div class="screen" id="detailScreen">
+  <button class="back-btn" onclick="showList()">← Back to queue</button>
+  <div id="visitorDetail"></div>
+</div>
+
+<script>
+const API = "https://web-production-93e78d.up.railway.app/api/v1";
+let state = { staff: null, event_id: null, event_name: null, visitors: [], current: null };
+
+// ── Restore session ──────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const saved = sessionStorage.getItem('fingoh_staff_session');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      state.staff = s.staff;
+      state.event_id = s.event_id;
+      state.event_name = s.event_name;
+      updateHeader();
+      showScreen('listScreen');
+      loadVisitors();
+    } catch {}
+  }
+});
+
+function saveSession() {
+  sessionStorage.setItem('fingoh_staff_session', JSON.stringify({
+    staff: state.staff, event_id: state.event_id, event_name: state.event_name
+  }));
+}
+
+function updateHeader() {
+  document.getElementById('headerEvent').textContent = state.event_name || state.event_id || '';
+  document.getElementById('staffBadge').style.display = 'block';
+  document.getElementById('staffName').textContent = state.staff?.name || state.staff?.email || '';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── Login ────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const event_id = document.getElementById('loginEventId').value.trim();
+  const email = document.getElementById('loginEmail').value.trim();
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtnText');
+  errEl.style.display = 'none';
+  if (!event_id || !email) { showErr('Please fill in both fields.'); return; }
+
+  btn.innerHTML = '<span class="spinner"></span>Signing in…';
+  try {
+    const res = await fetch(`${API}/staff/verify-login`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, event_id })
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr(data.detail || 'Login failed'); btn.textContent = 'Sign in →'; return; }
+
+    state.staff = data;
+    state.event_id = event_id;
+    state.event_name = data.event_name || event_id;
+    saveSession();
+    updateHeader();
+    showScreen('listScreen');
+    loadVisitors();
+  } catch(e) { showErr('Connection error. Check your internet.'); }
+  btn.textContent = 'Sign in →';
+}
+
+function showErr(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function doLogout() {
+  sessionStorage.removeItem('fingoh_staff_session');
+  state = { staff: null, event_id: null, event_name: null, visitors: [], current: null };
+  document.getElementById('staffBadge').style.display = 'none';
+  document.getElementById('headerEvent').textContent = 'Sign in to continue';
+  showScreen('loginScreen');
+}
+
+// ── Load visitors ────────────────────────────────────────────────────────────
+async function loadVisitors() {
+  document.getElementById('visitorList').innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><div>Loading visitors…</div></div>';
+  try {
+    const res = await fetch(`${API}/audience/visitors/${state.event_id}`, {
+      headers: { 'x-fingoh-auth': `Bearer ${state.staff?.token || ''}` }
+    });
+    if (!res.ok) throw new Error('Failed to load');
+    state.visitors = await res.json();
+    document.getElementById('visitorCount').textContent = `${state.visitors.length} visitors · sorted by IEI score`;
+    renderVisitors(state.visitors);
+  } catch(e) {
+    document.getElementById('visitorList').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div>Could not load visitors</div></div>';
+  }
+}
+
+function filterVisitors() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = q ? state.visitors.filter(v =>
+    (v.name||'').toLowerCase().includes(q) ||
+    (v.company||'').toLowerCase().includes(q) ||
+    (v.email||'').toLowerCase().includes(q)
+  ) : state.visitors;
+  renderVisitors(filtered);
+}
+
+function renderVisitors(list) {
+  const el = document.getElementById('visitorList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>No visitors found</div></div>';
+    return;
+  }
+  el.innerHTML = list.map((v,i) => `
+    <div class="visitor-card ${v.iei_tier||'Cold'}" onclick="showDetail(${i}, ${JSON.stringify(list).indexOf(JSON.stringify(v))})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div class="visitor-name">${v.name||v.email||'Unknown'}</div>
+          <div class="visitor-meta">${v.designation||''} ${v.designation&&v.company?'·':''} ${v.company||''}</div>
+          <div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span class="tier-badge ${v.iei_tier||'Cold'}">${v.iei_tier||'Unscored'}</span>
+            ${v.raw_data?.conv_quality ? `<span style="font-size:10px;color:var(--muted)">Conv: ${'★'.repeat(Math.round(v.raw_data.conv_quality))}</span>` : ''}
+          </div>
+        </div>
+        <div style="text-align:right;padding-left:12px">
+          <div class="visitor-score ${v.iei_tier||'Cold'}">${Math.round(v.iei_score||0)}</div>
+          <div style="font-size:9px;color:var(--muted)">IEI</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Re-attach click handlers properly
+  const cards = el.querySelectorAll('.visitor-card');
+  cards.forEach((card, i) => {
+    card.onclick = () => showVisitorDetail(list[i]);
+  });
+}
+
+// ── Visitor detail + signal logging ─────────────────────────────────────────
+function showList() { showScreen('listScreen'); loadVisitors(); }
+
+function showVisitorDetail(v) {
+  state.current = v;
+  const tier = v.iei_tier || 'Cold';
+  const tierColors = {Hot:'#ef4444',Warm:'#f97316',Cool:'#3b82f6',Cold:'#9ca3af'};
+  const raw = v.raw_data || {};
+
+  document.getElementById('visitorDetail').innerHTML = `
+    <!-- Profile header -->
+    <div style="background:linear-gradient(135deg,#0D1B3E,#1E2A4A);border-radius:14px;padding:18px;margin-bottom:14px;color:white">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0">
+          ${(v.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2)}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:16px;font-weight:700">${v.name||v.email}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6)">${v.designation||''} · ${v.company||''}</div>
+          <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+            <span class="tier-badge ${tier}">${tier}</span>
+            ${v.country ? `<span style="font-size:10px;color:rgba(255,255,255,0.5)">${v.country}</span>` : ''}
+          </div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:36px;font-weight:800;color:${tierColors[tier]}">${Math.round(v.iei_score||0)}</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.4)">IEI SCORE</div>
+        </div>
+      </div>
+      ${v.email ? `<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px">${v.email}</div>` : ''}
+    </div>
+
+    <!-- Log conversation -->
+    <div style="background:white;border-radius:14px;padding:18px;box-shadow:0 1px 6px rgba(0,0,0,0.06)">
+      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:14px">Log conversation</div>
+
+      <label>Conversation quality</label>
+      <div class="stars" id="starsRow">
+        ${[1,2,3,4,5].map(n=>`<span class="star" onclick="setStar(${n})" id="star${n}">${n <= (raw.conv_quality||0) ? '★' : '☆'}</span>`).join('')}
+      </div>
+
+      <label>Questions asked</label>
+      <div class="signal-grid" id="questionsGrid">
+        ${['pricing','technical','implementation','competitive','general'].map(q=>`
+          <div class="signal-btn ${raw.questions_type===q?'selected':''}" onclick="selectSignal('questionsGrid',this,'${q}')" data-val="${q}">
+            ${q.charAt(0).toUpperCase()+q.slice(1)}
+          </div>
+        `).join('')}
+      </div>
+
+      <label>Demo attended</label>
+      <div class="signal-grid" id="demoGrid">
+        <div class="signal-btn ${raw.demo_attendance?'selected green':''}" onclick="selectSignal('demoGrid',this,'yes')" data-val="yes">✓ Yes</div>
+        <div class="signal-btn ${!raw.demo_attendance&&raw.demo_attendance!==undefined?'selected':''}" onclick="selectSignal('demoGrid',this,'no')" data-val="no">✗ No</div>
+      </div>
+
+      <label>Collateral requested</label>
+      <div class="signal-grid" id="collateralGrid">
+        ${['specific','generic','none'].map(c=>`
+          <div class="signal-btn ${raw.collateral_requested===c?'selected':''}" onclick="selectSignal('collateralGrid',this,'${c}')" data-val="${c}">
+            ${c.charAt(0).toUpperCase()+c.slice(1)}
+          </div>
+        `).join('')}
+      </div>
+
+      <label>Return visit</label>
+      <div class="signal-grid" id="returnGrid">
+        <div class="signal-btn ${raw.return_visit?'selected green':''}" onclick="selectSignal('returnGrid',this,'yes')" data-val="yes">✓ Came back</div>
+        <div class="signal-btn" onclick="selectSignal('returnGrid',this,'no')" data-val="no">First visit</div>
+      </div>
+
+      <label>Notes</label>
+      <textarea id="notesField" placeholder="Key discussion points, specific needs, follow-up actions…">${raw.notes||''}</textarea>
+
+      <div id="signalError" class="error-msg" style="display:none"></div>
+      <div id="signalSuccess" class="success-msg" style="display:none"></div>
+
+      <button class="btn btn-green" onclick="submitSignal()" id="submitBtn">
+        Save conversation signal
+      </button>
+    </div>
+  `;
+  showScreen('detailScreen');
+}
+
+let selectedStar = 0;
+function setStar(n) {
+  selectedStar = n;
+  [1,2,3,4,5].forEach(i => {
+    document.getElementById(`star${i}`).textContent = i <= n ? '★' : '☆';
+  });
+}
+
+function selectSignal(gridId, el, val) {
+  const grid = document.getElementById(gridId);
+  grid.querySelectorAll('.signal-btn').forEach(b => b.classList.remove('selected','green'));
+  el.classList.add('selected');
+  if (val === 'yes') el.classList.add('green');
+}
+
+function getSelected(gridId) {
+  const el = document.querySelector(`#${gridId} .signal-btn.selected`);
+  return el ? el.dataset.val : null;
+}
+
+async function submitSignal() {
+  const btn = document.getElementById('submitBtn');
+  const errEl = document.getElementById('signalError');
+  const okEl = document.getElementById('signalSuccess');
+  errEl.style.display = 'none';
+  okEl.style.display = 'none';
+
+  const payload = {
+    email:                state.current.email,
+    conv_quality:         selectedStar || (state.current.raw_data?.conv_quality || 0),
+    questions_type:       getSelected('questionsGrid') || 'general',
+    demo_attendance:      getSelected('demoGrid') === 'yes',
+    collateral_requested: getSelected('collateralGrid') || 'none',
+    return_visit:         getSelected('returnGrid') === 'yes',
+    notes:                document.getElementById('notesField').value.trim(),
+  };
+
+  if (!payload.conv_quality) { errEl.textContent = 'Please rate conversation quality (stars).'; errEl.style.display='block'; return; }
+
+  btn.innerHTML = '<span class="spinner"></span>Saving…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/audience/log-signal/${state.event_id}`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-fingoh-auth': `Bearer ${state.staff?.token || ''}` },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Save failed');
+
+    const tier = data.iei_tier || 'Cool';
+    okEl.innerHTML = `✓ Signal saved · New IEI score: <strong>${Math.round(data.iei_score)} (${tier})</strong>`;
+    okEl.style.display = 'block';
+    // Update local visitor score
+    state.current.iei_score = data.iei_score;
+    state.current.iei_tier = data.iei_tier;
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+
+  btn.innerHTML = 'Save conversation signal';
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
