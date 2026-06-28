@@ -270,10 +270,10 @@ textarea { resize:none; height:80px; }
       <textarea id="notesField" placeholder="Key points, specific needs, follow-up actions…"></textarea>
     </div>
 
-    <!-- Step 7: Conversation capture -->
-    <div class="section" id="step7" style="opacity:0.4">
+    <!-- Step 8: Conversation capture -->
+    <div class="section" id="step8" style="opacity:0.4">
       <div class="step-head">
-        <div class="step-num dim" id="sn7">7</div>
+        <div class="step-num dim" id="sn8">7</div>
         <span class="step-label">Conversation capture</span>
         <span class="step-sub">— text · voice · AI analysis</span>
       </div>
@@ -493,8 +493,8 @@ function selectVisitor(v) {
   }
   document.getElementById('selVisitor').style.display='block';
   // Enable all steps
-  ['step2','step3','step4','step5','step6','step7'].forEach(id=>{ document.getElementById(id).style.opacity='1'; document.getElementById(id).style.pointerEvents='auto'; });
-  ['sn2','sn3','sn4','sn5','sn6','sn7'].forEach(id=>{ document.getElementById(id).classList.remove('dim'); });
+  ['step2','step3','step4','step5','step6','step7','step8'].forEach(id=>{ document.getElementById(id).style.opacity='1'; document.getElementById(id).style.pointerEvents='auto'; });
+  ['sn2','sn3','sn4','sn5','sn6','sn7','sn8'].forEach(id=>{ document.getElementById(id).classList.remove('dim'); });
 }
 
 // ── Score ───────────────────────────────────────────────────────────────────
@@ -645,7 +645,7 @@ function resetForm() {
   document.getElementById('scoreFeedback').style.display='none';
   document.getElementById('qFeedback').style.display='none';
   document.querySelectorAll('.q-chip').forEach(b=>{ b.classList.remove('sel'); b.style.background='white'; b.style.borderColor='#E2E8F0'; b.style.color='var(--muted)'; });
-  ['step2','step3','step4','step5','step6','step7'].forEach(id=>{ document.getElementById(id).style.opacity='0.4'; document.getElementById(id).style.pointerEvents='none'; });
+  ['step2','step3','step4','step5','step6','step7','step8'].forEach(id=>{ document.getElementById(id).style.opacity='0.4'; document.getElementById(id).style.pointerEvents='none'; });
 }
 
 function showMsg(id,msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
