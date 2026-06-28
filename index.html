@@ -201,9 +201,11 @@ async function fetchEvents() {
   btn.disabled = false;
 }
 
+let cachedEvents = [];
 function renderEventList(events) {
-  document.getElementById('eventList').innerHTML = events.map(ev => `
-    <div class="event-option" onclick="selectEvent('${ev.id}', ${JSON.stringify(ev.name)})">
+  cachedEvents = events;
+  document.getElementById('eventList').innerHTML = events.map((ev,i) => `
+    <div class="event-option" onclick="selectEvent(${i})">
       <div class="event-name">${ev.name}</div>
       <div class="event-meta">${ev.venue || ''} ${ev.date_from ? '· ' + ev.date_from.slice(0,10) : ''}</div>
     </div>
@@ -211,7 +213,10 @@ function renderEventList(events) {
 }
 
 // ── Step 2: Login with selected event ───────────────────────────────────────
-async function selectEvent(event_id, event_name) {
+async function selectEvent(idx) {
+  const ev = cachedEvents[idx];
+  const event_id = ev.id;
+  const event_name = ev.name;
   const email = state.staffEmail;
   try {
     const res = await fetch(`${API}/staff/verify-login`, {
