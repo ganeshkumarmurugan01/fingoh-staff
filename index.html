@@ -261,16 +261,7 @@ textarea { resize:none; height:80px; }
     </div>
 
     <!-- Step 7: Notes -->
-    <div class="section" id="step7" style="opacity:0.4">
-      <div class="step-head">
-        <div class="step-num dim" id="sn7">7</div>
-        <span class="step-label">Conversation notes</span>
-        <span class="step-sub">— optional</span>
-      </div>
-      <textarea id="notesField" placeholder="Key points, specific needs, follow-up actions…"></textarea>
-    </div>
-
-    <!-- Step 8: Conversation capture -->
+    <!-- Step 7: Conversation capture (merged from notes + capture) -->
     <div class="section" id="step8" style="opacity:0.4">
       <div class="step-head">
         <div class="step-num dim" id="sn8">7</div>
@@ -285,7 +276,7 @@ textarea { resize:none; height:80px; }
       </div>
       <!-- Text mode -->
       <div id="textMode">
-        <textarea id="notesField" placeholder="e.g. Replacing 3 CT scanners — Q1 budget approved, I sign off under SGD 2.8M. Currently using Philips, want to switch. Need HL7 and ASEAN framework pricing." style="height:90px"></textarea>
+        <textarea id="captureField" placeholder="e.g. Replacing 3 CT scanners — Q1 budget approved, I sign off under SGD 2.8M. Currently using Philips, want to switch. Need HL7 and ASEAN framework pricing." style="height:90px"></textarea>
         <p style="font-size:10px;color:var(--muted);margin-top:5px">Mention budget, timeline, authority, or requirements to add signal weight.</p>
       </div>
       <!-- Voice mode -->
@@ -408,7 +399,7 @@ function doLogout() {
   try { resetForm(); } catch(e) {}
   // Reset voice/AI state
   try {
-    document.getElementById('notesField').value = '';
+    try { document.getElementById('captureField').value = ''; } catch(e) {}
     document.getElementById('transcriptBox').value = '';
     document.getElementById('aiResult').style.display = 'none';
   } catch(e) {}
@@ -502,8 +493,8 @@ function selectVisitor(v) {
   }
   document.getElementById('selVisitor').style.display='block';
   // Enable all steps
-  ['step2','step3','step4','step5','step6','step7','step8'].forEach(id=>{ document.getElementById(id).style.opacity='1'; document.getElementById(id).style.pointerEvents='auto'; });
-  ['sn2','sn3','sn4','sn5','sn6','sn7','sn8'].forEach(id=>{ document.getElementById(id).classList.remove('dim'); });
+  ['step2','step3','step4','step5','step6','step8'].forEach(id=>{ document.getElementById(id).style.opacity='1'; document.getElementById(id).style.pointerEvents='auto'; });
+  ['sn2','sn3','sn4','sn5','sn6','sn8'].forEach(id=>{ document.getElementById(id).classList.remove('dim'); });
 
   // Pre-populate form with previous signal data if available
   if (v.id) {
@@ -568,7 +559,7 @@ function selectVisitor(v) {
       }
 
       // Pre-fill notes
-      if (sig.notes) document.getElementById('notesField').value = sig.notes;
+      if (sig.notes) document.getElementById('captureField').value = sig.notes;
 
       // Show banner + previous AI analysis — only once
       const existingBanner = document.getElementById('overwriteBanner');
@@ -702,7 +693,7 @@ async function submitSignal() {
       buying_group: state.bg,
       meeting_booked: state.mtg,
       urgency: state.urgency,
-      notes: document.getElementById('notesField').value.trim(),
+      notes: document.getElementById('captureField').value.trim(),
       ai_intent_level: aiAnalysis?.intentLevel || null,
       ai_buying_signals: aiAnalysis?.buyingSignals || [],
       ai_score_delta: aiAnalysis?.scoreDelta || null,
@@ -742,12 +733,12 @@ function resetForm() {
   document.getElementById('searchInput').value='';
   document.getElementById('selVisitor').style.display='none';
   const ob = document.getElementById('overwriteBanner'); if(ob) ob.remove();
-  document.getElementById('notesField').value='';
+  try { document.getElementById('captureField').value=''; } catch(e) {}
   [1,2,3,4,5].forEach(i=>{ const b=document.getElementById(`sb${i}`); b.style.borderColor='#E2E8F0'; b.style.background='white'; b.querySelector('.score-num').style.color='var(--muted)'; b.querySelector('.score-lbl').style.color='#94A3B8'; });
   document.getElementById('scoreFeedback').style.display='none';
   document.getElementById('qFeedback').style.display='none';
   document.querySelectorAll('.q-chip').forEach(b=>{ b.classList.remove('sel'); b.style.background='white'; b.style.borderColor='#E2E8F0'; b.style.color='var(--muted)'; });
-  ['step2','step3','step4','step5','step6','step7','step8'].forEach(id=>{ document.getElementById(id).style.opacity='0.4'; document.getElementById(id).style.pointerEvents='none'; });
+  ['step2','step3','step4','step5','step6','step8'].forEach(id=>{ document.getElementById(id).style.opacity='0.4'; document.getElementById(id).style.pointerEvents='none'; });
 }
 
 function showMsg(id,msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
@@ -803,7 +794,7 @@ function stopVoice() {
   if(text) {
     document.getElementById('transcriptText').textContent = text;
     document.getElementById('voiceTranscript').style.display='block';
-    document.getElementById('notesField').value = text;
+    document.getElementById('captureField').value = text;
   } else {
     document.getElementById('voiceIdle').style.display='block';
   }
@@ -818,7 +809,7 @@ function retryVoice() {
 }
 
 async function runAI() {
-  const src = document.getElementById('notesField').value.trim() || finalTranscript.trim();
+  const src = document.getElementById('captureField').value.trim() || finalTranscript.trim();
   if(!src) { alert('Please type or record a conversation first.'); return; }
   if(!state.sel) { alert('Please select a visitor first.'); return; }
   document.getElementById('aiLoading').style.display='block';
@@ -857,7 +848,7 @@ function renderAI(a) {
   }
   document.getElementById('aiFollowUp').textContent=a.followUpHook||'';
   // Show transcript used
-  const src2 = document.getElementById('notesField').value.trim() || finalTranscript.trim();
+  const src2 = document.getElementById('captureField').value.trim() || finalTranscript.trim();
   const preview = document.getElementById('aiTranscriptPreview');
   if(preview && src2) { preview.textContent = '"' + src2.slice(0,120) + (src2.length>120?'…':'') + '"'; preview.style.display='block'; }
   document.getElementById('aiResult').style.display='block';
