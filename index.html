@@ -570,13 +570,27 @@ function selectVisitor(v) {
       // Pre-fill notes
       if (sig.notes) document.getElementById('notesField').value = sig.notes;
 
-      // Show banner that this is an overwrite — only once
+      // Show banner + previous AI analysis — only once
       const existingBanner = document.getElementById('overwriteBanner');
       if (!existingBanner) {
         const banner = document.createElement('div');
         banner.id = 'overwriteBanner';
         banner.style.cssText = 'background:#FFF8F0;border:1px solid #FFD9AA;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:11px;color:#7A3500;';
-        banner.textContent = '⚠ Previous signal found — form pre-filled. Adjust and re-submit to overwrite.';
+
+        let bannerHTML = '<strong>⚠ Previous signal found</strong> — form pre-filled. Adjust and re-submit to overwrite.';
+
+        // Show previous AI analysis if available
+        if (sig.ai_intent_level) {
+          const intentColor = sig.ai_intent_level==='strong'?'#16A34A':sig.ai_intent_level==='moderate'?'#D97706':'#DC2626';
+          bannerHTML += `<div style="margin-top:6px;padding:6px 8px;background:white;border-radius:6px;border:1px solid #E2E8F0;">
+            <div style="font-size:10px;font-weight:700;color:#64748B;margin-bottom:3px;">PREVIOUS AI ANALYSIS</div>
+            <div style="font-size:11px;color:${intentColor};font-weight:600;">Intent: ${sig.ai_intent_level.toUpperCase()}</div>
+            ${sig.ai_buying_signals?.length ? `<div style="font-size:10px;color:#475569;margin-top:2px;">Signals: ${sig.ai_buying_signals.slice(0,3).join(' · ')}</div>` : ''}
+            ${sig.ai_score_delta ? `<div style="font-size:10px;color:#7C3AED;margin-top:2px;">Score delta: ${sig.ai_score_delta}</div>` : ''}
+          </div>`;
+        }
+
+        banner.innerHTML = bannerHTML;
         document.getElementById('selVisitor').appendChild(banner);
       }
     })
