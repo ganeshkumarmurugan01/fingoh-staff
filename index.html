@@ -400,10 +400,18 @@ function updateHeader() {
 
 function doLogout() {
   sessionStorage.removeItem('fingoh_staff');
-  Object.assign(state, {staff:null,event_id:null,event_name:null,visitors:[],sel:null});
+  Object.assign(state, {staff:null,event_id:null,event_name:null,visitors:[],sel:null,score:null,qTypes:[],ret:false,demo:false,badge:false,bg:false,mtg:false,collateral:'',urgency:''});
   document.getElementById('headerSub').textContent = 'Visitor intelligence · on the floor';
   document.getElementById('headerRight').innerHTML = '';
   document.getElementById('emailInput').value = '';
+  // Reset the form fully
+  try { resetForm(); } catch(e) {}
+  // Reset voice/AI state
+  try {
+    document.getElementById('notesField').value = '';
+    document.getElementById('transcriptBox').value = '';
+    document.getElementById('aiResult').style.display = 'none';
+  } catch(e) {}
   showScreen('emailScreen');
 }
 
