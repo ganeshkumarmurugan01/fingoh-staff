@@ -504,6 +504,73 @@ function selectVisitor(v) {
   // Enable all steps
   ['step2','step3','step4','step5','step6','step7','step8'].forEach(id=>{ document.getElementById(id).style.opacity='1'; document.getElementById(id).style.pointerEvents='auto'; });
   ['sn2','sn3','sn4','sn5','sn6','sn7','sn8'].forEach(id=>{ document.getElementById(id).classList.remove('dim'); });
+
+  // Pre-populate form with previous signal data if available
+  if (v.id) {
+    fetch(`${API}/audience/check-signal/${v.id}`, {
+      headers: { 'x-fingoh-auth': `Bearer ${state.token}` }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.exists || !data.signal) return;
+      const sig = data.signal;
+
+      // Pre-fill conversation quality
+      if (sig.conversation_quality) {
+        const score = Math.round(sig.conversation_quality * 5);
+        if (score >= 1 && score <= 5) setScore(score);
+      }
+
+      // Pre-fill question types
+      const qtArr = Array.isArray(sig.question_types)
+        ? sig.question_types
+        : (sig.question_types ? [sig.question_types] : []);
+      qtArr.forEach(qt => {
+        document.querySelectorAll('.q-chip').forEach(btn => {
+          if (btn.dataset.q === qt || btn.textContent.toLowerCase().includes(qt.toLowerCase())) {
+            btn.classList.add('sel');
+            btn.style.background = 'var(--navy)';
+            btn.style.borderColor = 'var(--navy)';
+            btn.style.color = 'white';
+            if (!state.qTypes.includes(qt)) state.qTypes.push(qt);
+          }
+        });
+      });
+
+      // Pre-fill toggles — use toggleSignal only if should be ON (state starts false)
+      if (sig.return_visit  && !state.ret)  toggleSignal('ret');
+      if (sig.demo_requested && !state.demo) toggleSignal('demo');
+      if (sig.badge_scan    && !state.badge) toggleSignal('badge');
+      if (sig.buying_group  && !state.bg)    toggleSignal('bg');
+      if (sig.meeting_booked && !state.mtg)  toggleSignal('mtg');
+
+      // Pre-fill collateral
+      if (sig.collateral) {
+        const collMap = {'none':'coll_none','Generic brochure':'coll_generic','Specific asset':'coll_specific'};
+        const collId = collMap[sig.collateral] || 'coll_none';
+        const collBtn = document.getElementById(collId);
+        if (collBtn) setColl(collBtn, sig.collateral);
+      }
+
+      // Pre-fill urgency
+      if (sig.urgency) {
+        const urgMap = {'low':'urg_low','medium':'urg_medium','high':'urg_high'};
+        const urgId = urgMap[sig.urgency];
+        const urgBtn = document.getElementById(urgId);
+        if (urgBtn) setUrgency(urgBtn, sig.urgency);
+      }
+
+      // Pre-fill notes
+      if (sig.notes) document.getElementById('notesField').value = sig.notes;
+
+      // Show banner that this is an overwrite
+      const banner = document.createElement('div');
+      banner.style.cssText = 'background:#FFF8F0;border:1px solid #FFD9AA;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:11px;color:#7A3500;';
+      banner.textContent = '⚠ Previous signal found — form pre-filled. Adjust and re-submit to overwrite.';
+      document.getElementById('selVisitor').appendChild(banner);
+    })
+    .catch(() => {});
+  }
 }
 
 // ── Score ───────────────────────────────────────────────────────────────────
