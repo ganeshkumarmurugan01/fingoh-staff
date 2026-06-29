@@ -516,25 +516,32 @@ function selectVisitor(v) {
       const sig = data.signal;
 
       // Pre-fill conversation quality
+      // stored as integer 1-5 in conversation_signals table
       if (sig.conversation_quality) {
-        const score = Math.round(sig.conversation_quality * 5);
+        const score = Math.round(sig.conversation_quality);
         if (score >= 1 && score <= 5) setScore(score);
       }
 
       // Pre-fill question types
-      const qtArr = Array.isArray(sig.question_types)
-        ? sig.question_types
-        : (sig.question_types ? [sig.question_types] : []);
-      qtArr.forEach(qt => {
-        document.querySelectorAll('.q-chip').forEach(btn => {
-          if (btn.dataset.q === qt || btn.textContent.toLowerCase().includes(qt.toLowerCase())) {
-            btn.classList.add('sel');
-            btn.style.background = 'var(--navy)';
-            btn.style.borderColor = 'var(--navy)';
-            btn.style.color = 'white';
-            if (!state.qTypes.includes(qt)) state.qTypes.push(qt);
-          }
-        });
+      const qtRaw = sig.question_types;
+      const qtArr = Array.isArray(qtRaw) ? qtRaw
+        : (typeof qtRaw === 'string' && qtRaw.startsWith('['))
+          ? JSON.parse(qtRaw)
+          : (qtRaw ? [qtRaw] : []);
+      state.qTypes = [];
+      document.querySelectorAll('.q-chip').forEach(btn => {
+        const chipVal = btn.dataset.q || btn.textContent.trim();
+        const match = qtArr.some(qt =>
+          chipVal.toLowerCase().includes(qt.toLowerCase()) ||
+          qt.toLowerCase().includes(chipVal.toLowerCase())
+        );
+        if (match) {
+          btn.classList.add('sel');
+          btn.style.background = 'var(--navy)';
+          btn.style.borderColor = 'var(--navy)';
+          btn.style.color = 'white';
+          if (!state.qTypes.includes(chipVal)) state.qTypes.push(chipVal);
+        }
       });
 
       // Pre-fill toggles — use toggleSignal only if should be ON (state starts false)
