@@ -563,11 +563,15 @@ function selectVisitor(v) {
       // Pre-fill notes
       if (sig.notes) document.getElementById('notesField').value = sig.notes;
 
-      // Show banner that this is an overwrite
-      const banner = document.createElement('div');
-      banner.style.cssText = 'background:#FFF8F0;border:1px solid #FFD9AA;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:11px;color:#7A3500;';
-      banner.textContent = '⚠ Previous signal found — form pre-filled. Adjust and re-submit to overwrite.';
-      document.getElementById('selVisitor').appendChild(banner);
+      // Show banner that this is an overwrite — only once
+      const existingBanner = document.getElementById('overwriteBanner');
+      if (!existingBanner) {
+        const banner = document.createElement('div');
+        banner.id = 'overwriteBanner';
+        banner.style.cssText = 'background:#FFF8F0;border:1px solid #FFD9AA;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:11px;color:#7A3500;';
+        banner.textContent = '⚠ Previous signal found — form pre-filled. Adjust and re-submit to overwrite.';
+        document.getElementById('selVisitor').appendChild(banner);
+      }
     })
     .catch(() => {});
   }
@@ -713,9 +717,10 @@ async function submitSignal() {
 
 function resetForm() {
   state.sel=null; state.score=null; state.qTypes=[]; state.ret=false; state.demo=false;
-  state.badge=false; state.bg=false; state.mtg=false; state.collateral=''; state.urgency=''; 
+  state.badge=false; state.bg=false; state.mtg=false; state.collateral=''; state.urgency='';
   document.getElementById('searchInput').value='';
   document.getElementById('selVisitor').style.display='none';
+  const ob = document.getElementById('overwriteBanner'); if(ob) ob.remove();
   document.getElementById('notesField').value='';
   [1,2,3,4,5].forEach(i=>{ const b=document.getElementById(`sb${i}`); b.style.borderColor='#E2E8F0'; b.style.background='white'; b.querySelector('.score-num').style.color='var(--muted)'; b.querySelector('.score-lbl').style.color='#94A3B8'; });
   document.getElementById('scoreFeedback').style.display='none';
