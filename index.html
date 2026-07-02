@@ -524,15 +524,22 @@ function renderMeetings() {
   const el = document.getElementById('meetingsList');
   if (!el) return;
   if (!cachedMeetings.length) {
-    el.innerHTML = '<div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:12px">No accepted meetings yet for this event.</div>';
+    el.innerHTML = '<div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:12px">No meetings yet for this event.</div>';
     return;
   }
-  el.innerHTML = cachedMeetings.map(m => {
+
+  const upcoming  = cachedMeetings.filter(m => m.status !== 'completed');
+  const completed = cachedMeetings.filter(m => m.status === 'completed')
+    .sort((a,b) => new Date(b.completed_at||0) - new Date(a.completed_at||0));
+
+  const sectionHeader = (label, count) => `
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px 2px">${label} (${count})</div>`;
+
+  const renderUpcomingCard = (m) => {
     const c = m.audience_contacts || {};
     const dt = m.proposed_datetime ? new Date(m.proposed_datetime) : null;
     const dtFmt = dt ? dt.toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : '—';
-    const isDone = m.status === 'completed';
-    const sc = MEETING_STATUS_COLORS[m.status] || MEETING_STATUS_COLORS.accepted;
+    const sc = MEETING_STATUS_COLORS.accepted;
     const cap = getCapture(m.id);
     const startFmt = cap.startTime ? new Date(cap.startTime).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : null;
     const endFmt   = cap.endTime   ? new Date(cap.endTime).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})   : null;
@@ -545,58 +552,91 @@ function renderMeetings() {
               <div style="font-size:14px;font-weight:700;color:var(--navy)">${c.name || c.email || 'Visitor'}</div>
               <div style="font-size:11px;color:var(--muted)">${c.company || ''}${c.designation ? ' · '+c.designation : ''}</div>
             </div>
-            <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:${sc.bg};color:${sc.fg}">${isDone?'Completed':'Accepted'}</span>
+            <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:${sc.bg};color:${sc.fg}">Accepted</span>
           </div>
           <div style="font-size:12px;color:#1A1A2E;margin-top:6px">🕐 Scheduled ${dtFmt}</div>
           ${m.location ? `<div style="font-size:12px;color:#1A1A2E;margin-top:3px">📍 ${m.location}</div>` : ''}
           ${m.topic ? `<div style="font-size:12px;color:#1A1A2E;margin-top:3px">💬 ${m.topic}</div>` : ''}
-          ${isDone && m.staff_completion_notes ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;padding:8px;background:#F8FAFC;border-radius:8px;white-space:pre-wrap">${m.staff_completion_notes}</div>` : ''}
 
-          ${!isDone ? `
-            <!-- Actual start/end time -->
-            <div style="display:flex;gap:6px;margin-top:12px">
-              <button class="coll-btn" style="flex:1;${cap.startTime?'border-color:var(--green);color:var(--green)':''}" onclick="markMeetingTime('${m.id}','startTime')">
-                ${startFmt ? '✓ Started '+startFmt : '▶ Start now'}
-              </button>
-              <button class="coll-btn" style="flex:1;${cap.endTime?'border-color:var(--red);color:var(--red)':''}" onclick="markMeetingTime('${m.id}','endTime')">
-                ${endFmt ? '✓ Ended '+endFmt : '■ End now'}
-              </button>
+          <!-- Actual start/end time -->
+          <div style="display:flex;gap:6px;margin-top:12px">
+            <button class="coll-btn" style="flex:1;${cap.startTime?'border-color:var(--green);color:var(--green)':''}" onclick="markMeetingTime('${m.id}','startTime')">
+              ${startFmt ? '✓ Started '+startFmt : '▶ Start now'}
+            </button>
+            <button class="coll-btn" style="flex:1;${cap.endTime?'border-color:var(--red);color:var(--red)':''}" onclick="markMeetingTime('${m.id}','endTime')">
+              ${endFmt ? '✓ Ended '+endFmt : '■ End now'}
+            </button>
+          </div>
+
+          <!-- Notes: type or voice -->
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button class="mode-tab ${cap.mode==='text'?'active':''}" id="mNodeText-${m.id}" onclick="setMeetingMode('${m.id}','text')">✏️ Type</button>
+            <button class="mode-tab ${cap.mode==='voice'?'active':''}" id="mNodeVoice-${m.id}" onclick="setMeetingMode('${m.id}','voice')">🎙 Voice</button>
+          </div>
+
+          <div id="mTextMode-${m.id}" style="display:${cap.mode==='text'?'block':'none'};margin-top:8px">
+            <textarea id="notes-${m.id}" oninput="syncNotes('${m.id}')" placeholder="Notes from the meeting (optional)" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:12px;resize:vertical;min-height:70px">${cap.notes||''}</textarea>
+          </div>
+
+          <div id="mVoiceMode-${m.id}" style="display:${cap.mode==='voice'?'block':'none'};margin-top:8px">
+            <div id="mVoiceIdle-${m.id}" style="display:${(!mRecMeetingId||mRecMeetingId!==m.id)?'block':'none'};text-align:center;padding:14px;background:#F8FAFC;border-radius:9px">
+              <button onclick="startMeetingVoice('${m.id}')" style="border:none;background:var(--navy);color:white;width:48px;height:48px;border-radius:50%;font-size:18px;cursor:pointer">🎙</button>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px">Tap to record</div>
             </div>
-
-            <!-- Notes: type or voice -->
-            <div style="display:flex;gap:6px;margin-top:10px">
-              <button class="mode-tab ${cap.mode==='text'?'active':''}" id="mNodeText-${m.id}" onclick="setMeetingMode('${m.id}','text')">✏️ Type</button>
-              <button class="mode-tab ${cap.mode==='voice'?'active':''}" id="mNodeVoice-${m.id}" onclick="setMeetingMode('${m.id}','voice')">🎙 Voice</button>
+            <div id="mVoiceRecording-${m.id}" style="display:${mRecMeetingId===m.id?'block':'none'};text-align:center;padding:14px;background:#FEF2F2;border-radius:9px">
+              <button onclick="stopMeetingVoice('${m.id}')" style="border:none;background:var(--red);color:white;width:48px;height:48px;border-radius:50%;font-size:18px;cursor:pointer">■</button>
+              <div style="font-size:11px;color:var(--red);font-weight:700;margin-top:6px" id="mRecTimer-${m.id}">0s</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:4px;padding:0 8px" id="mInterimText-${m.id}">Speak now…</div>
             </div>
+            ${cap.transcript ? `<div style="font-size:11px;color:#1A1A2E;margin-top:8px;padding:8px;background:#F8FAFC;border-radius:8px">${cap.transcript}</div>` : ''}
+          </div>
 
-            <div id="mTextMode-${m.id}" style="display:${cap.mode==='text'?'block':'none'};margin-top:8px">
-              <textarea id="notes-${m.id}" oninput="syncNotes('${m.id}')" placeholder="Notes from the meeting (optional)" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:12px;resize:vertical;min-height:70px">${cap.notes||''}</textarea>
-            </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button onclick="runMeetingAI('${m.id}')" id="mAIBtn-${m.id}" style="font-size:11px;color:var(--purple);background:none;border:1px solid var(--purple);border-radius:99px;padding:5px 12px;cursor:pointer;font-family:inherit;font-weight:600">+ AI Analyse</button>
+          </div>
+          <div id="mAILoading-${m.id}" style="display:none;text-align:center;padding:10px;font-size:11px;color:var(--muted)">Analysing…</div>
+          <div id="mAIResult-${m.id}">${cap.ai ? renderMeetingAIHtml(cap.ai) : ''}</div>
 
-            <div id="mVoiceMode-${m.id}" style="display:${cap.mode==='voice'?'block':'none'};margin-top:8px">
-              <div id="mVoiceIdle-${m.id}" style="display:${(!mRecMeetingId||mRecMeetingId!==m.id)?'block':'none'};text-align:center;padding:14px;background:#F8FAFC;border-radius:9px">
-                <button onclick="startMeetingVoice('${m.id}')" style="border:none;background:var(--navy);color:white;width:48px;height:48px;border-radius:50%;font-size:18px;cursor:pointer">🎙</button>
-                <div style="font-size:10px;color:var(--muted);margin-top:6px">Tap to record</div>
-              </div>
-              <div id="mVoiceRecording-${m.id}" style="display:${mRecMeetingId===m.id?'block':'none'};text-align:center;padding:14px;background:#FEF2F2;border-radius:9px">
-                <button onclick="stopMeetingVoice('${m.id}')" style="border:none;background:var(--red);color:white;width:48px;height:48px;border-radius:50%;font-size:18px;cursor:pointer">■</button>
-                <div style="font-size:11px;color:var(--red);font-weight:700;margin-top:6px" id="mRecTimer-${m.id}">0s</div>
-                <div style="font-size:10px;color:var(--muted);margin-top:4px;padding:0 8px" id="mInterimText-${m.id}">Speak now…</div>
-              </div>
-              ${cap.transcript ? `<div style="font-size:11px;color:#1A1A2E;margin-top:8px;padding:8px;background:#F8FAFC;border-radius:8px">${cap.transcript}</div>` : ''}
-            </div>
-
-            <div style="display:flex;justify-content:flex-end;margin-top:8px">
-              <button onclick="runMeetingAI('${m.id}')" id="mAIBtn-${m.id}" style="font-size:11px;color:var(--purple);background:none;border:1px solid var(--purple);border-radius:99px;padding:5px 12px;cursor:pointer;font-family:inherit;font-weight:600">+ AI Analyse</button>
-            </div>
-            <div id="mAILoading-${m.id}" style="display:none;text-align:center;padding:10px;font-size:11px;color:var(--muted)">Analysing…</div>
-            <div id="mAIResult-${m.id}">${cap.ai ? renderMeetingAIHtml(cap.ai) : ''}</div>
-
-            <button class="btn" onclick="completeMeeting('${m.id}')" style="margin-top:10px;width:100%;padding:9px;background:var(--green);color:white;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">✓ Mark completed</button>
-          ` : ''}
+          <button class="btn" onclick="completeMeeting('${m.id}')" style="margin-top:10px;width:100%;padding:9px;background:var(--green);color:white;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">✓ Mark completed</button>
         </div>
       </div>`;
-  }).join('');
+  };
+
+  const renderCompletedCard = (m) => {
+    const c = m.audience_contacts || {};
+    const sc = MEETING_STATUS_COLORS.completed;
+    const st = m.actual_start_time ? new Date(m.actual_start_time) : null;
+    const et = m.actual_end_time ? new Date(m.actual_end_time) : null;
+    const timeLine = st
+      ? `${st.toLocaleString([], {dateStyle:'medium', timeStyle:'short'})}${et ? ' – '+et.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}`
+      : (m.completed_at ? new Date(m.completed_at).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : '—');
+    const durationMin = (st && et) ? Math.round((et-st)/60000) : null;
+
+    return `
+      <div class="card" style="margin-bottom:10px;opacity:0.92">
+        <div class="section">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--navy)">${c.name || c.email || 'Visitor'}</div>
+              <div style="font-size:11px;color:var(--muted)">${c.company || ''}${c.designation ? ' · '+c.designation : ''}</div>
+            </div>
+            <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:${sc.bg};color:${sc.fg}">✓ Completed</span>
+          </div>
+          <div style="font-size:12px;color:#1A1A2E;margin-top:6px">🕐 ${timeLine}${durationMin!==null ? ` · ${durationMin} min` : ''}</div>
+          ${m.location ? `<div style="font-size:12px;color:#1A1A2E;margin-top:3px">📍 ${m.location}</div>` : ''}
+          ${m.topic ? `<div style="font-size:12px;color:#1A1A2E;margin-top:3px">💬 ${m.topic}</div>` : ''}
+          ${m.staff_completion_notes ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;padding:8px;background:#F8FAFC;border-radius:8px;white-space:pre-wrap">${m.staff_completion_notes}</div>` : ''}
+          ${m.ai_analysis ? renderMeetingAIHtml(m.ai_analysis) : ''}
+        </div>
+      </div>`;
+  };
+
+  let html = '';
+  html += sectionHeader('Upcoming', upcoming.length);
+  html += upcoming.length ? upcoming.map(renderUpcomingCard).join('') : `<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No accepted meetings pending.</div>`;
+  html += sectionHeader('Completed', completed.length);
+  html += completed.length ? completed.map(renderCompletedCard).join('') : `<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">Nothing completed yet.</div>`;
+  el.innerHTML = html;
 }
 
 function setMeetingMode(id, mode) {
@@ -706,6 +746,8 @@ async function completeMeeting(meetingId) {
     actual_start_time: cap.startTime || null,
     actual_end_time: cap.endTime || null,
     ai_analysis: cap.ai || null,
+    staff_name: state.staff?.name || null,
+    staff_email: state.staffEmail || null,
   };
   try {
     const res = await fetch(`${API}/meetings/staff/${meetingId}/complete`, {
@@ -714,8 +756,7 @@ async function completeMeeting(meetingId) {
     });
     if (!res.ok) { alert('Could not update meeting. Try again.'); return; }
     delete meetingCapture[meetingId];
-    cachedMeetings = cachedMeetings.filter(x=>x.id!==meetingId);
-    renderMeetings();
+    await loadMeetings(); // refetch so the card moves into Completed with server-confirmed data
   } catch(e) { alert('Connection error'); }
 }
 
