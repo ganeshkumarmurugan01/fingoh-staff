@@ -356,7 +356,7 @@ textarea { resize:none; height:80px; }
 </div>
 
 <script>
-const API = "https://web-production-93e78d.up.railway.app/api/v1";
+const API = "/api/v1";
 const scoreColors = {1:"#94A3B8",2:"#64748B",3:"#EAB308",4:"#3B82F6",5:"#16A34A"};
 const scoreLabels = {1:"Pass-through",2:"Polite interest",3:"Engaged",4:"Strong evaluator",5:"Active buyer"};
 const toggleColors = {ret:"#16A34A",demo:"#2563EB",badge:"#64748B",bg:"#7C3AED",mtg:"#0D9488"};
@@ -1119,7 +1119,7 @@ async function runAI() {
   document.getElementById('aiResult').style.display='none';
   document.getElementById('modeAI').disabled=true;
   try {
-    const res = await fetch('https://web-production-93e78d.up.railway.app/api/v1/audience/ai/analyse-conversation',{
+    const res = await fetch('/api/v1/audience/ai/analyse-conversation',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
