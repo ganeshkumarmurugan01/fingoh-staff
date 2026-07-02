@@ -489,6 +489,21 @@ const MEETING_STATUS_COLORS = {
   cancelled:{bg:'#F8FAFC',fg:'#64748B'}
 };
 
+// Per-meeting-card capture state, keyed by meeting id. Preserved across
+// renderMeetings() re-renders so in-progress notes/times/AI aren't lost.
+let meetingCapture = {};
+function getCapture(id) {
+  if (!meetingCapture[id]) meetingCapture[id] = { mode:'text', notes:'', startTime:null, endTime:null, ai:null, transcript:'' };
+  return meetingCapture[id];
+}
+
+// Voice recording is scoped separately from the Log Signal recorder above,
+// since a meeting recording can be active while a different tab is shown.
+let mRecognition = null;
+let mRecInterval = null;
+let mRecSeconds = 0;
+let mRecMeetingId = null;
+
 async function loadMeetings() {
   if (!state.event_id) return;
   const listEl = document.getElementById('meetingsList');
@@ -498,6 +513,11 @@ async function loadMeetings() {
     if (res.ok) cachedMeetings = await res.json();
   } catch {}
   renderMeetings();
+}
+
+function syncNotes(id) {
+  const el = document.getElementById(`notes-${id}`);
+  if (el) getCapture(id).notes = el.value;
 }
 
 function renderMeetings() {
@@ -513,6 +533,10 @@ function renderMeetings() {
     const dtFmt = dt ? dt.toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : '—';
     const isDone = m.status === 'completed';
     const sc = MEETING_STATUS_COLORS[m.status] || MEETING_STATUS_COLORS.accepted;
+    const cap = getCapture(m.id);
+    const startFmt = cap.startTime ? new Date(cap.startTime).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : null;
+    const endFmt   = cap.endTime   ? new Date(cap.endTime).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})   : null;
+
     return `
       <div class="card" style="margin-bottom:10px">
         <div class="section">
@@ -523,30 +547,174 @@ function renderMeetings() {
             </div>
             <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:${sc.bg};color:${sc.fg}">${isDone?'Completed':'Accepted'}</span>
           </div>
-          <div style="font-size:12px;color:#1A1A2E;margin-top:6px">🕐 ${dtFmt}</div>
+          <div style="font-size:12px;color:#1A1A2E;margin-top:6px">🕐 Scheduled ${dtFmt}</div>
           ${m.location ? `<div style="font-size:12px;color:#1A1A2E;margin-top:3px">📍 ${m.location}</div>` : ''}
           ${m.topic ? `<div style="font-size:12px;color:#1A1A2E;margin-top:3px">💬 ${m.topic}</div>` : ''}
-          ${isDone && m.staff_completion_notes ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;padding:8px;background:#F8FAFC;border-radius:8px">${m.staff_completion_notes}</div>` : ''}
+          ${isDone && m.staff_completion_notes ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;padding:8px;background:#F8FAFC;border-radius:8px;white-space:pre-wrap">${m.staff_completion_notes}</div>` : ''}
+
           ${!isDone ? `
-            <textarea id="notes-${m.id}" placeholder="Notes from the meeting (optional)" style="width:100%;margin-top:10px;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:12px;resize:vertical;min-height:44px"></textarea>
-            <button class="btn" onclick="completeMeeting('${m.id}')" style="margin-top:8px;width:100%;padding:9px;background:var(--green);color:white;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">✓ Mark completed</button>
+            <!-- Actual start/end time -->
+            <div style="display:flex;gap:6px;margin-top:12px">
+              <button class="coll-btn" style="flex:1;${cap.startTime?'border-color:var(--green);color:var(--green)':''}" onclick="markMeetingTime('${m.id}','startTime')">
+                ${startFmt ? '✓ Started '+startFmt : '▶ Start now'}
+              </button>
+              <button class="coll-btn" style="flex:1;${cap.endTime?'border-color:var(--red);color:var(--red)':''}" onclick="markMeetingTime('${m.id}','endTime')">
+                ${endFmt ? '✓ Ended '+endFmt : '■ End now'}
+              </button>
+            </div>
+
+            <!-- Notes: type or voice -->
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <button class="mode-tab ${cap.mode==='text'?'active':''}" id="mNodeText-${m.id}" onclick="setMeetingMode('${m.id}','text')">✏️ Type</button>
+              <button class="mode-tab ${cap.mode==='voice'?'active':''}" id="mNodeVoice-${m.id}" onclick="setMeetingMode('${m.id}','voice')">🎙 Voice</button>
+            </div>
+
+            <div id="mTextMode-${m.id}" style="display:${cap.mode==='text'?'block':'none'};margin-top:8px">
+              <textarea id="notes-${m.id}" oninput="syncNotes('${m.id}')" placeholder="Notes from the meeting (optional)" style="width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:12px;resize:vertical;min-height:70px">${cap.notes||''}</textarea>
+            </div>
+
+            <div id="mVoiceMode-${m.id}" style="display:${cap.mode==='voice'?'block':'none'};margin-top:8px">
+              <div id="mVoiceIdle-${m.id}" style="display:${(!mRecMeetingId||mRecMeetingId!==m.id)?'block':'none'};text-align:center;padding:14px;background:#F8FAFC;border-radius:9px">
+                <button onclick="startMeetingVoice('${m.id}')" style="border:none;background:var(--navy);color:white;width:48px;height:48px;border-radius:50%;font-size:18px;cursor:pointer">🎙</button>
+                <div style="font-size:10px;color:var(--muted);margin-top:6px">Tap to record</div>
+              </div>
+              <div id="mVoiceRecording-${m.id}" style="display:${mRecMeetingId===m.id?'block':'none'};text-align:center;padding:14px;background:#FEF2F2;border-radius:9px">
+                <button onclick="stopMeetingVoice('${m.id}')" style="border:none;background:var(--red);color:white;width:48px;height:48px;border-radius:50%;font-size:18px;cursor:pointer">■</button>
+                <div style="font-size:11px;color:var(--red);font-weight:700;margin-top:6px" id="mRecTimer-${m.id}">0s</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:4px;padding:0 8px" id="mInterimText-${m.id}">Speak now…</div>
+              </div>
+              ${cap.transcript ? `<div style="font-size:11px;color:#1A1A2E;margin-top:8px;padding:8px;background:#F8FAFC;border-radius:8px">${cap.transcript}</div>` : ''}
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;margin-top:8px">
+              <button onclick="runMeetingAI('${m.id}')" id="mAIBtn-${m.id}" style="font-size:11px;color:var(--purple);background:none;border:1px solid var(--purple);border-radius:99px;padding:5px 12px;cursor:pointer;font-family:inherit;font-weight:600">+ AI Analyse</button>
+            </div>
+            <div id="mAILoading-${m.id}" style="display:none;text-align:center;padding:10px;font-size:11px;color:var(--muted)">Analysing…</div>
+            <div id="mAIResult-${m.id}">${cap.ai ? renderMeetingAIHtml(cap.ai) : ''}</div>
+
+            <button class="btn" onclick="completeMeeting('${m.id}')" style="margin-top:10px;width:100%;padding:9px;background:var(--green);color:white;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">✓ Mark completed</button>
           ` : ''}
         </div>
       </div>`;
   }).join('');
 }
 
+function setMeetingMode(id, mode) {
+  syncNotes(id);
+  getCapture(id).mode = mode;
+  document.getElementById(`mNodeText-${id}`).classList.toggle('active', mode==='text');
+  document.getElementById(`mNodeVoice-${id}`).classList.toggle('active', mode==='voice');
+  document.getElementById(`mTextMode-${id}`).style.display = mode==='text' ? 'block' : 'none';
+  document.getElementById(`mVoiceMode-${id}`).style.display = mode==='voice' ? 'block' : 'none';
+}
+
+function markMeetingTime(id, which) {
+  getCapture(id)[which] = new Date().toISOString();
+  syncNotes(id);
+  renderMeetings();
+}
+
+function startMeetingVoice(id) {
+  if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    alert('Voice recording not supported on this browser. Please use Chrome on Android or Safari on iOS.'); return;
+  }
+  // Only one meeting can record at a time
+  if (mRecognition) { try { mRecognition.stop(); } catch(e){} }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  mRecognition = new SR();
+  mRecognition.continuous = true;
+  mRecognition.interimResults = true;
+  mRecognition.lang = 'en-US';
+  mRecMeetingId = id;
+  mRecSeconds = 0;
+  let localFinal = getCapture(id).transcript || '';
+  document.getElementById(`mVoiceIdle-${id}`).style.display = 'none';
+  document.getElementById(`mVoiceRecording-${id}`).style.display = 'block';
+  mRecInterval = setInterval(()=>{ mRecSeconds++; const t=document.getElementById(`mRecTimer-${id}`); if(t) t.textContent = mRecSeconds+'s'; }, 1000);
+  mRecognition.onresult = (e) => {
+    let interim = '';
+    for(let i=e.resultIndex;i<e.results.length;i++) {
+      if(e.results[i].isFinal) localFinal += e.results[i][0].transcript+' ';
+      else interim += e.results[i][0].transcript;
+    }
+    const el = document.getElementById(`mInterimText-${id}`);
+    if (el) el.textContent = (localFinal+interim).slice(-120) || 'Speak now…';
+    getCapture(id).transcript = localFinal.trim();
+  };
+  mRecognition.onerror = () => stopMeetingVoice(id);
+  mRecognition.start();
+}
+
+function stopMeetingVoice(id) {
+  if (mRecognition) { try { mRecognition.stop(); } catch(e){} mRecognition = null; }
+  clearInterval(mRecInterval);
+  mRecMeetingId = null;
+  const cap = getCapture(id);
+  // Fold transcript into notes so it's included when marking complete
+  if (cap.transcript) cap.notes = (cap.notes ? cap.notes+'\n' : '') + cap.transcript;
+  renderMeetings();
+}
+
+function renderMeetingAIHtml(a) {
+  const intentColors={strong:'#16A34A',moderate:'#2563EB',weak:'#DC2626'};
+  const col = intentColors[a.intentLevel] || '#64748B';
+  const signals = (a.buyingSignals||[]).map(s=>`<span style="background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;padding:2px 8px;border-radius:99px;font-size:9px;margin:2px">${s}</span>`).join('');
+  const flags = (a.redFlags||[]).map(s=>`<span style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;padding:2px 8px;border-radius:99px;font-size:9px;margin:2px">${s}</span>`).join('');
+  return `
+    <div style="margin-top:8px;padding:10px;background:#F8FAFC;border-radius:9px;border:1px solid #E2E8F0">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${col}20;color:${col}">${a.intentLevel||'—'} intent</span>
+        <span style="font-size:11px;font-weight:700;color:${(a.scoreDelta||'').startsWith('+')?'#16A34A':'#DC2626'}">${a.scoreDelta||''}</span>
+      </div>
+      ${a.recommendedAction ? `<div style="font-size:11px;color:#1A1A2E;margin-top:6px">${a.recommendedAction}</div>` : ''}
+      ${signals ? `<div style="margin-top:6px">${signals}</div>` : ''}
+      ${flags ? `<div style="margin-top:4px">${flags}</div>` : ''}
+      ${a.followUpHook ? `<div style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic">↳ ${a.followUpHook}</div>` : ''}
+    </div>`;
+}
+
+async function runMeetingAI(id) {
+  syncNotes(id);
+  const cap = getCapture(id);
+  const src = (cap.notes || '').trim();
+  if (!src) { alert('Please type or record some meeting notes first.'); return; }
+  const m = cachedMeetings.find(x=>x.id===id);
+  const c = m ? (m.audience_contacts||{}) : {};
+  document.getElementById(`mAILoading-${id}`).style.display = 'block';
+  document.getElementById(`mAIBtn-${id}`).disabled = true;
+  try {
+    const res = await fetch(`${API}/audience/ai/analyse-conversation`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ visitor: { name:c.name, company:c.company }, conversation: src })
+    });
+    const data = await res.json();
+    if (data && data.intentLevel) {
+      cap.ai = data;
+      document.getElementById(`mAIResult-${id}`).innerHTML = renderMeetingAIHtml(data);
+    }
+  } catch(e) { console.error(e); }
+  document.getElementById(`mAILoading-${id}`).style.display = 'none';
+  document.getElementById(`mAIBtn-${id}`).disabled = false;
+}
+
 async function completeMeeting(meetingId) {
-  const notesEl = document.getElementById(`notes-${meetingId}`);
-  const notes = notesEl ? notesEl.value.trim() : '';
+  syncNotes(meetingId);
+  if (mRecMeetingId === meetingId) stopMeetingVoice(meetingId);
+  const cap = getCapture(meetingId);
+  const payload = {
+    staff_completion_notes: (cap.notes||'').trim() || null,
+    actual_start_time: cap.startTime || null,
+    actual_end_time: cap.endTime || null,
+    ai_analysis: cap.ai || null,
+  };
   try {
     const res = await fetch(`${API}/meetings/staff/${meetingId}/complete`, {
       method:'PATCH', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({staff_completion_notes: notes || null})
+      body: JSON.stringify(payload)
     });
     if (!res.ok) { alert('Could not update meeting. Try again.'); return; }
-    const m = cachedMeetings.find(x=>x.id===meetingId);
-    if (m) { m.status='completed'; m.staff_completion_notes=notes; m.completed_at=new Date().toISOString(); }
+    delete meetingCapture[meetingId];
+    cachedMeetings = cachedMeetings.filter(x=>x.id!==meetingId);
     renderMeetings();
   } catch(e) { alert('Connection error'); }
 }
