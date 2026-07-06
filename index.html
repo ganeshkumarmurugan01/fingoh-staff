@@ -738,6 +738,21 @@ async function runMeetingAI(id) {
 }
 
 async function completeMeeting(meetingId) {
+  // 1. Immediately show loading state on the button
+  const btn = document.querySelector(`button[onclick="completeMeeting('${meetingId}')"]`);
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="animation:spin 0.8s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Completing…</span>';
+  }
+
+  // 2. Optimistically update cached meeting status
+  const meeting = cachedMeetings.find(m => m.id === meetingId);
+  if (meeting) {
+    meeting.status = 'completed';
+    meeting.completed_at = new Date().toISOString();
+  }
+  renderMeetings(); // instantly re-render with completed state
+
   syncNotes(meetingId);
   if (mRecMeetingId === meetingId) stopMeetingVoice(meetingId);
   const cap = getCapture(meetingId);
@@ -754,12 +769,22 @@ async function completeMeeting(meetingId) {
       method:'PATCH', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(payload)
     });
-    if (!res.ok) { alert('Could not update meeting. Try again.'); return; }
+    if (!res.ok) {
+      // Revert optimistic update on failure
+      if (meeting) { meeting.status = 'accepted'; meeting.completed_at = null; }
+      renderMeetings();
+      alert('Could not update meeting. Try again.');
+      return;
+    }
     delete meetingCapture[meetingId];
-    await loadMeetings(); // refetch so the card moves into Completed with server-confirmed data
-  } catch(e) { alert('Connection error'); }
+    await loadMeetings(); // refetch final confirmed data from server
+  } catch(e) {
+    // Revert on network error
+    if (meeting) { meeting.status = 'accepted'; meeting.completed_at = null; }
+    renderMeetings();
+    alert('Connection error');
+  }
 }
-
 function onSearch() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   state.query = q;
