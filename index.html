@@ -76,17 +76,14 @@ textarea { resize:none; height:80px; }
 </head>
 <body>
 <div class="header">
-  <div style="display:flex;align-items:center;gap:10px">
-    <svg width="32" height="26" viewBox="0 0 32 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="8" y="0" width="24" height="5" rx="2.5" fill="#38BDF8"/>
-      <rect x="0" y="7" width="32" height="5" rx="2.5" fill="#4ADE80"/>
-      <rect x="0" y="14" width="24" height="5" rx="2.5" fill="#FACC15"/>
-      <rect x="0" y="21" width="16" height="5" rx="2.5" fill="#F87171"/>
+  <div style="display:flex;align-items:center;gap:8px">
+    <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="0" width="17" height="3.5" rx="1.75" fill="#38BDF8"/>
+      <rect x="0" y="5" width="22" height="3.5" rx="1.75" fill="#4ADE80"/>
+      <rect x="0" y="10" width="17" height="3.5" rx="1.75" fill="#FACC15"/>
+      <rect x="0" y="15" width="11" height="3.5" rx="1.75" fill="#F87171"/>
     </svg>
-    <div>
-      <div class="header-logo" style="font-size:16px">Fingoh<span style="opacity:0.55">.ai</span> <span style="font-size:11px;font-weight:500;opacity:0.6">Staff</span></div>
-      <div class="header-sub" id="headerSub">Visitor intelligence · on the floor</div>
-    </div>
+    <div class="header-sub" id="headerSub" style="font-size:11px;color:rgba(255,255,255,0.6)">Visitor intelligence · on the floor</div>
   </div>
   <div id="headerRight"></div>
 </div>
@@ -134,9 +131,17 @@ textarea { resize:none; height:80px; }
 <!-- STAFF APP MAIN SCREEN -->
 <div class="screen" id="appScreen">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <div>
-      <h2 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:2px">Staff app</h2>
-      <p style="font-size:11px;color:var(--muted)" id="appSubtitle"></p>
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="28" height="22" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="7" y="0" width="21" height="4.5" rx="2.25" fill="#38BDF8"/>
+        <rect x="0" y="6" width="28" height="4.5" rx="2.25" fill="#4ADE80"/>
+        <rect x="0" y="12" width="21" height="4.5" rx="2.25" fill="#FACC15"/>
+        <rect x="0" y="18" width="14" height="4.5" rx="2.25" fill="#F87171"/>
+      </svg>
+      <div>
+        <div style="font-size:17px;font-weight:800;color:var(--navy);letter-spacing:-0.02em">Fingoh<span style="color:#64748B">.ai</span></div>
+        <p style="font-size:11px;color:var(--muted);margin:0" id="appSubtitle"></p>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#F0FDF4;border-radius:99px;border:1px solid #86EFAC;font-size:10px;font-weight:700;color:#14532D">
