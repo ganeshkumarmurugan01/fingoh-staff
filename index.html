@@ -76,13 +76,15 @@ textarea { resize:none; height:80px; }
 </head>
 <body>
 <div class="header">
-  <div style="display:flex;align-items:center;gap:8px">
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" id="headerLogo">
-      <rect width="28" height="28" rx="7" fill="white" fill-opacity="0.15"/>
-      <text x="14" y="20" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="13" fill="white">fi</text>
+  <div style="display:flex;align-items:center;gap:10px">
+    <svg width="32" height="26" viewBox="0 0 32 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="0" width="24" height="5" rx="2.5" fill="#38BDF8"/>
+      <rect x="0" y="7" width="32" height="5" rx="2.5" fill="#4ADE80"/>
+      <rect x="0" y="14" width="24" height="5" rx="2.5" fill="#FACC15"/>
+      <rect x="0" y="21" width="16" height="5" rx="2.5" fill="#F87171"/>
     </svg>
     <div>
-      <div class="header-logo">Fingoh<span style="color:rgba(255,255,255,0.6)">.ai</span> <span style="font-size:11px;font-weight:500;opacity:0.7">Staff</span></div>
+      <div class="header-logo" style="font-size:16px">Fingoh<span style="opacity:0.55">.ai</span> <span style="font-size:11px;font-weight:500;opacity:0.6">Staff</span></div>
       <div class="header-sub" id="headerSub">Visitor intelligence · on the floor</div>
     </div>
   </div>
@@ -140,6 +142,7 @@ textarea { resize:none; height:80px; }
       <span style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#F0FDF4;border-radius:99px;border:1px solid #86EFAC;font-size:10px;font-weight:700;color:#14532D">
         <span style="width:5px;height:5px;border-radius:50%;background:#16A34A;display:inline-block"></span>Live
       </span>
+      <button onclick="showChangePasscode()" style="font-size:11px;color:var(--muted);background:none;border:1px solid #E2E8F0;border-radius:7px;cursor:pointer;padding:4px 10px;font-family:inherit">🔑 Passcode</button>
       <button onclick="doLogout()" style="font-size:11px;color:var(--muted);background:none;border:1px solid #E2E8F0;border-radius:7px;cursor:pointer;padding:4px 10px;font-family:inherit">Sign out</button>
     </div>
   </div>
@@ -469,9 +472,13 @@ async function fetchEvents() {
 
 async function selectEvent(idx) {
   const ev = cachedEvents[idx];
-  // Store pending event; will be confirmed after passcode (or immediately if no passcode)
   state._pendingEvent = ev;
-  await _doVerifyLogin(null);
+  // Always show passcode screen (default passcode is 1234)
+  document.getElementById('passcodeTitle').textContent = 'Enter your passcode';
+  document.getElementById('passcodeErr').style.display = 'none';
+  document.getElementById('passcodeInput').value = '';
+  showScreen('passcodeScreen');
+  setTimeout(() => document.getElementById('passcodeInput').focus(), 200);
 }
 
 async function _doVerifyLogin(passcode) {
@@ -1236,6 +1243,67 @@ function renderAI(a) {
   if(preview && src2) { preview.textContent = '"' + src2.slice(0,120) + (src2.length>120?'…':'') + '"'; preview.style.display='block'; }
   document.getElementById('aiResult').style.display='block';
 }
+
+
+// ── Change Passcode ──────────────────────────────────────────────────────────
+function showChangePasscode() {
+  document.getElementById('cpModal').style.display = 'flex';
+  document.getElementById('cpCurrent').value = '';
+  document.getElementById('cpNew').value = '';
+  document.getElementById('cpConfirm').value = '';
+  document.getElementById('cpErr').style.display = 'none';
+  document.getElementById('cpSuccess').style.display = 'none';
+}
+
+function hideChangePasscode() {
+  document.getElementById('cpModal').style.display = 'none';
+}
+
+async function submitChangePasscode() {
+  const current = document.getElementById('cpCurrent').value.trim();
+  const newPc   = document.getElementById('cpNew').value.trim();
+  const confirm = document.getElementById('cpConfirm').value.trim();
+  const errEl   = document.getElementById('cpErr');
+  const btn     = document.getElementById('cpBtn');
+
+  errEl.style.display = 'none';
+  if (!current) { errEl.textContent = 'Enter your current passcode.'; errEl.style.display = 'block'; return; }
+  if (newPc.length < 4) { errEl.textContent = 'New passcode must be at least 4 characters.'; errEl.style.display = 'block'; return; }
+  if (newPc !== confirm) { errEl.textContent = 'New passcodes do not match.'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Saving…';
+  try {
+    const res = await fetch(`${API}/staff/change-passcode`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staff_id: state.staff?.id, current_passcode: current, new_passcode: newPc })
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.detail || 'Failed to change passcode.'; errEl.style.display = 'block'; }
+    else { document.getElementById('cpSuccess').style.display = 'block'; setTimeout(hideChangePasscode, 1500); }
+  } catch(e) { errEl.textContent = 'Connection error. Try again.'; errEl.style.display = 'block'; }
+  btn.disabled = false; btn.innerHTML = 'Save new passcode';
+}
 </script>
+
+<!-- Change Passcode Modal -->
+<div id="cpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:360px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:800;color:var(--navy)">Change Passcode</div>
+      <button onclick="hideChangePasscode()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Default passcode is <strong>1234</strong>. Choose something only you know.</div>
+    <label style="font-size:11px;font-weight:600;color:var(--navy);display:block;margin-bottom:4px">Current passcode</label>
+    <input type="password" id="cpCurrent" inputmode="numeric" placeholder="Current passcode" style="width:100%;padding:10px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:14px;margin-bottom:12px">
+    <label style="font-size:11px;font-weight:600;color:var(--navy);display:block;margin-bottom:4px">New passcode</label>
+    <input type="password" id="cpNew" inputmode="numeric" placeholder="Min 4 characters" style="width:100%;padding:10px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:14px;margin-bottom:12px">
+    <label style="font-size:11px;font-weight:600;color:var(--navy);display:block;margin-bottom:4px">Confirm new passcode</label>
+    <input type="password" id="cpConfirm" inputmode="numeric" placeholder="Repeat new passcode" style="width:100%;padding:10px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:inherit;font-size:14px;margin-bottom:12px" onkeydown="if(event.key==='Enter')submitChangePasscode()">
+    <div id="cpErr" style="display:none;color:#DC2626;font-size:12px;margin-bottom:10px"></div>
+    <div id="cpSuccess" style="display:none;color:#16A34A;font-size:12px;font-weight:600;margin-bottom:10px">✓ Passcode updated successfully!</div>
+    <button id="cpBtn" onclick="submitChangePasscode()" class="btn btn-navy">Save new passcode</button>
+  </div>
+</div>
+
 </body>
 </html>
