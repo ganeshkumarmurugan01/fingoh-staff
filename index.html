@@ -75,23 +75,13 @@ textarea { resize:none; height:80px; }
 </style>
 </head>
 <body>
-<div class="header">
-  <div style="display:flex;align-items:center;gap:8px">
-    <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="5" y="0" width="17" height="3.5" rx="1.75" fill="#38BDF8"/>
-      <rect x="0" y="5" width="22" height="3.5" rx="1.75" fill="#4ADE80"/>
-      <rect x="0" y="10" width="17" height="3.5" rx="1.75" fill="#FACC15"/>
-      <rect x="0" y="15" width="11" height="3.5" rx="1.75" fill="#F87171"/>
-    </svg>
-    <div class="header-sub" id="headerSub" style="font-size:11px;color:rgba(255,255,255,0.6)"></div>
-  </div>
-  <div id="headerRight"></div>
-</div>
+<div id="headerRight" style="display:none"></div>
+<div id="headerSub" style="display:none"></div>
 
 <!-- EMAIL SCREEN -->
 <div class="screen active" id="emailScreen">
   <div style="text-align:center;padding:32px 0 20px">
-    <img src="/logo.png" alt="Fingoh.ai" style="height:36px;display:inline-block">
+    <img src="/Fingoh_Black.png" alt="Fingoh.ai" style="height:40px;display:inline-block">
     <h2 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:4px">Staff App</h2>
     <p style="font-size:12px;color:var(--muted)">Enter your work email to see your events</p>
   </div>
@@ -106,7 +96,7 @@ textarea { resize:none; height:80px; }
 <!-- EVENT SELECT SCREEN -->
 <div class="screen" id="eventScreen">
   <div style="text-align:center;padding:24px 0 16px">
-    <img src="/logo.png" alt="Fingoh.ai" style="height:36px;display:inline-block">
+    <img src="/Fingoh_Black.png" alt="Fingoh.ai" style="height:40px;display:inline-block">
   </div>
   <div style="margin-bottom:16px">
     <div style="font-size:16px;font-weight:800;color:var(--navy)">Select your event</div>
@@ -119,7 +109,7 @@ textarea { resize:none; height:80px; }
 <!-- PASSCODE SCREEN -->
 <div class="screen" id="passcodeScreen">
   <div style="text-align:center;padding:24px 0 20px">
-    <img src="/logo.png" alt="Fingoh.ai" style="height:36px;display:inline-block;margin-bottom:20px">
+    <img src="/Fingoh_Black.png" alt="Fingoh.ai" style="height:40px;display:inline-block">
     <div style="font-size:14px;font-weight:700;color:var(--navy)" id="passcodeTitle">Enter your passcode</div>
     <div style="font-size:12px;color:var(--muted);margin-top:6px">Your manager set a passcode for your account</div>
   </div>
@@ -136,7 +126,7 @@ textarea { resize:none; height:80px; }
 <div class="screen" id="appScreen">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
     <div>
-      <img src="/logo.png" alt="Fingoh.ai" style="height:28px;display:block;margin-bottom:4px">
+      <img src="/Fingoh_Black.png" alt="Fingoh.ai" style="height:40px;display:inline-block">
       <p style="font-size:11px;color:var(--muted);margin:0" id="appSubtitle"></p>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
@@ -511,7 +501,7 @@ async function _doVerifyLogin(passcode) {
     state.staff = data; state.event_id = ev.id; state.event_name = ev.name;
     state._pendingEvent = null;
     saveSession(); updateHeader();
-    document.getElementById('appSubtitle').innerHTML = `${ev.name} · Logging as <strong style="color:var(--navy)">${data.name}</strong>`;
+    document.getElementById('appSubtitle').innerHTML = `Logging as <strong style="color:var(--navy)">${data.name}</strong>`;
     showScreen('appScreen');
     loadVisitors();
     loadMeetings();
