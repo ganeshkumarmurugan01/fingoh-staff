@@ -578,7 +578,7 @@ async function updateOfflineBanner() {
 }
 async function syncQueue() {
   const items = await dequeueAll();
-  if (!items.length) { await updateOfflineBanner(); await updateChoiceOfflineBanner(); return; }
+  if (!items.length) { await updateOfflineBanner(); await updateChoiceOfflineBanner(); return {synced:0, failed:0}; }
   let synced = 0, failed = 0;
   for (const item of items) {
     try {
@@ -586,15 +586,31 @@ async function syncQueue() {
       if (item.type === 'walk_in') { url = `${API}/audience/walk-in`; body = item.payload; }
       else if (item.type === 'signal') { url = `${API}/audience/signal`; body = item.payload; }
       if (!url) { await deleteQueued(item.id); continue; }
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(15000)
-      });
-      if (res.ok) { await deleteQueued(item.id); synced++; }
-      else { failed++; console.warn('Sync item failed:', res.status, await res.text()); }
-    } catch(e) { failed++; console.warn('Sync error:', e.message); }
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      let res;
+      try {
+        res = await fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(body),
+          signal: controller.signal
+        });
+      } finally { clearTimeout(timer); }
+
+      const responseText = await res.text();
+      if (res.ok) {
+        await deleteQueued(item.id);
+        synced++;
+      } else {
+        failed++;
+        console.warn('Sync failed', res.status, responseText);
+      }
+    } catch(e) {
+      failed++;
+      console.warn('Sync error:', e.message);
+    }
   }
   await updateOfflineBanner();
   await updateChoiceOfflineBanner();
@@ -622,10 +638,10 @@ async function syncQueueFromChoice() {
     if (btn) btn.textContent = '✓ Synced!';
     setTimeout(() => { if (btn) btn.textContent = 'Sync now'; }, 2000);
   } else if (result && result.failed > 0) {
-    if (btn) btn.textContent = 'Retry';
-    alert(`⚠ ${result.failed} item(s) failed to sync. Check connection and try again.`);
+    if (btn) { btn.textContent = 'Retry'; btn.disabled = false; }
+    alert(`⚠ Sync failed (${result.failed} item(s)). Check Railway logs or internet.`);
   } else {
-    if (btn) btn.textContent = 'Sync now';
+    if (btn) { btn.textContent = 'Sync now'; btn.disabled = false; }
   }
 }
 
@@ -633,15 +649,15 @@ async function syncQueueFromApp() {
   const btn = document.querySelector('#offlineBar button');
   if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
   const result = await syncQueue();
-  if (btn) { btn.disabled = false; }
-  if (result && result.synced > 0 && result.failed === 0) {
+  if (!result) { if (btn) { btn.textContent = 'Sync now'; btn.disabled = false; } return; }
+  if (result.synced > 0 && result.failed === 0) {
     if (btn) btn.textContent = '✓ Synced!';
-    setTimeout(() => { if (btn) btn.textContent = 'Sync now'; }, 2000);
-  } else if (result && result.failed > 0) {
-    if (btn) btn.textContent = 'Retry';
-    alert(`⚠ ${result.failed} item(s) failed. Check connection.`);
+    setTimeout(() => { if (btn) { btn.textContent = 'Sync now'; btn.disabled = false; } }, 2000);
+  } else if (result.failed > 0) {
+    if (btn) { btn.textContent = 'Retry'; btn.disabled = false; }
+    alert(`⚠ Sync failed (${result.failed} item(s)). Check internet connection.`);
   } else {
-    if (btn) btn.textContent = 'Sync now';
+    if (btn) { btn.textContent = 'Sync now'; btn.disabled = false; }
   }
 }
 
