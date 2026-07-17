@@ -152,7 +152,12 @@ textarea { resize:none; height:80px; }
       <p style="font-size:12px;color:var(--muted);line-height:1.4">Not in the system. Scan their business card or enter details quickly.</p>
     </div>
   </button>
-  <button onclick="doLogout()" style="width:100%;margin-top:8px;padding:10px;background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit">← Back / Sign out</button>
+  <!-- Offline banner on choice screen -->
+  <div id="choiceOfflineBar" style="display:none;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600;color:#92400E;margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+    <span>📶 Offline — <span id="choicePendingCount">0</span> action(s) pending</span>
+    <button onclick="syncQueueFromChoice()" style="background:#D97706;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Sync now</button>
+  </div>
+  <button onclick="doLogout()" style="width:100%;margin-top:12px;padding:10px;background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit">← Back / Sign out</button>
 </div>
 
 <!-- ── Walk-in capture screen ── -->
@@ -591,9 +596,30 @@ async function syncQueue() {
   }
   await updateOfflineBanner();
 }
+async function updateChoiceOfflineBanner() {
+  const items = await dequeueAll();
+  const bar   = document.getElementById('choiceOfflineBar');
+  const count = document.getElementById('choicePendingCount');
+  if (!bar) return;
+  if (items.length > 0) {
+    bar.style.display = 'flex';
+    if (count) count.textContent = items.length;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+async function syncQueueFromChoice() {
+  const btn = document.querySelector('#choiceOfflineBar button');
+  if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
+  await syncQueue();
+  await updateChoiceOfflineBanner();
+  if (btn) { btn.textContent = 'Sync now'; btn.disabled = false; }
+}
+
 // Auto-sync when coming back online
-window.addEventListener('online',  () => { syncQueue(); updateOfflineBanner(); });
-window.addEventListener('offline', () => updateOfflineBanner());
+window.addEventListener('online',  () => { syncQueue(); updateOfflineBanner(); updateChoiceOfflineBanner(); });
+window.addEventListener('offline', () => { updateOfflineBanner(); updateChoiceOfflineBanner(); });
 
 // ── Business card scan ────────────────────────────────────────────────────────
 function compressImage(file, maxPx=900, quality=0.65) {
@@ -705,11 +731,11 @@ async function saveWalkIn() {
   if (!navigator.onLine) {
     await enqueue('walk_in', payload);
     await updateOfflineBanner();
+    await updateChoiceOfflineBanner();
     btn.disabled=false; btn.innerHTML='Save Walk-in Visitor';
     clearWalkInForm();
-    // Show success on choice screen
     showScreen('choiceScreen');
-    alert(`✓ ${name} saved locally — will sync when online`);
+    alert(`✓ ${name} saved locally — tap "Sync now" when connected`);
     return;
   }
 
@@ -726,12 +752,12 @@ async function saveWalkIn() {
     loadVisitors();
     alert(`✓ ${name} captured and logged as walk-in`);
   } catch(e) {
-    // Network error — queue it
     await enqueue('walk_in', payload);
     await updateOfflineBanner();
+    await updateChoiceOfflineBanner();
     clearWalkInForm();
     showScreen('choiceScreen');
-    alert(`✓ ${name} saved locally — will sync when online`);
+    alert(`✓ ${name} saved locally — tap "Sync now" when connected`);
   }
   btn.disabled=false; btn.innerHTML='Save Walk-in Visitor';
 }
@@ -1621,7 +1647,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 // Check queue on load
-window.addEventListener('load', () => { updateOfflineBanner(); syncQueue(); });
+window.addEventListener('load', () => { updateOfflineBanner(); updateChoiceOfflineBanner(); syncQueue(); });
 </script>
 </body>
 </html>
