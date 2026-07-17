@@ -227,6 +227,7 @@ textarea { resize:none; height:80px; }
         <span style="width:5px;height:5px;border-radius:50%;background:#16A34A;display:inline-block"></span>Live
       </span>
       <button onclick="showChangePasscode()" style="font-size:11px;color:var(--muted);background:none;border:1px solid #E2E8F0;border-radius:7px;cursor:pointer;padding:4px 10px;font-family:inherit">🔑 Passcode</button>
+      <button onclick="showScreen('choiceScreen')" style="font-size:11px;color:var(--navy);background:#EFF6FF;border:1px solid #BFDBFE;border-radius:7px;cursor:pointer;padding:4px 10px;font-family:inherit;font-weight:600">← Back</button>
       <button onclick="doLogout()" style="font-size:11px;color:var(--muted);background:none;border:1px solid #E2E8F0;border-radius:7px;cursor:pointer;padding:4px 10px;font-family:inherit">Sign out</button>
     </div>
   </div>
@@ -789,10 +790,16 @@ async function saveWalkIn() {
       body: JSON.stringify(payload)
     });
     const data = await res.json();
+    if (res.status === 409) {
+      // Duplicate — show inline error, do not queue
+      errEl.textContent = `⚠ ${data.detail}`;
+      errEl.style.display = 'block';
+      btn.disabled=false; btn.innerHTML='Save Walk-in Visitor';
+      return;
+    }
     if (!res.ok) throw new Error(data.detail || 'Save failed');
     clearWalkInForm();
     showScreen('choiceScreen');
-    // Reload visitors so new walk-in appears in search
     loadVisitors();
     alert(`✓ ${name} captured and logged as walk-in`);
   } catch(e) {
