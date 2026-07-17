@@ -234,7 +234,7 @@ textarea { resize:none; height:80px; }
   <!-- Offline banner -->
   <div id="offlineBar" style="display:none;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:600;color:#92400E;margin-bottom:10px;align-items:center;justify-content:space-between;gap:8px">
     <span>📶 Offline — <span id="pendingCount">0</span> action(s) queued</span>
-    <button onclick="syncQueue()" style="background:#D97706;color:white;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Sync now</button>
+    <button onclick="syncQueueFromApp()" style="background:#D97706;color:white;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Sync now</button>
   </div>
 
   <div style="display:flex;gap:6px;margin-bottom:14px">
@@ -577,24 +577,28 @@ async function updateOfflineBanner() {
   }
 }
 async function syncQueue() {
-  if (!navigator.onLine) return;
   const items = await dequeueAll();
+  if (!items.length) { await updateOfflineBanner(); await updateChoiceOfflineBanner(); return; }
+  let synced = 0, failed = 0;
   for (const item of items) {
     try {
       let url, body;
-      if (item.type === 'walk_in') {
-        url  = `${API}/audience/walk-in`;
-        body = item.payload;
-      } else if (item.type === 'signal') {
-        url  = `${API}/audience/signal`;
-        body = item.payload;
-      }
+      if (item.type === 'walk_in') { url = `${API}/audience/walk-in`; body = item.payload; }
+      else if (item.type === 'signal') { url = `${API}/audience/signal`; body = item.payload; }
       if (!url) { await deleteQueued(item.id); continue; }
-      const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
-      if (res.ok) await deleteQueued(item.id);
-    } catch {}
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15000)
+      });
+      if (res.ok) { await deleteQueued(item.id); synced++; }
+      else { failed++; console.warn('Sync item failed:', res.status, await res.text()); }
+    } catch(e) { failed++; console.warn('Sync error:', e.message); }
   }
   await updateOfflineBanner();
+  await updateChoiceOfflineBanner();
+  return { synced, failed };
 }
 async function updateChoiceOfflineBanner() {
   const items = await dequeueAll();
@@ -612,9 +616,33 @@ async function updateChoiceOfflineBanner() {
 async function syncQueueFromChoice() {
   const btn = document.querySelector('#choiceOfflineBar button');
   if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
-  await syncQueue();
-  await updateChoiceOfflineBanner();
-  if (btn) { btn.textContent = 'Sync now'; btn.disabled = false; }
+  const result = await syncQueue();
+  if (btn) { btn.disabled = false; }
+  if (result && result.synced > 0 && result.failed === 0) {
+    if (btn) btn.textContent = '✓ Synced!';
+    setTimeout(() => { if (btn) btn.textContent = 'Sync now'; }, 2000);
+  } else if (result && result.failed > 0) {
+    if (btn) btn.textContent = 'Retry';
+    alert(`⚠ ${result.failed} item(s) failed to sync. Check connection and try again.`);
+  } else {
+    if (btn) btn.textContent = 'Sync now';
+  }
+}
+
+async function syncQueueFromApp() {
+  const btn = document.querySelector('#offlineBar button');
+  if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
+  const result = await syncQueue();
+  if (btn) { btn.disabled = false; }
+  if (result && result.synced > 0 && result.failed === 0) {
+    if (btn) btn.textContent = '✓ Synced!';
+    setTimeout(() => { if (btn) btn.textContent = 'Sync now'; }, 2000);
+  } else if (result && result.failed > 0) {
+    if (btn) btn.textContent = 'Retry';
+    alert(`⚠ ${result.failed} item(s) failed. Check connection.`);
+  } else {
+    if (btn) btn.textContent = 'Sync now';
+  }
 }
 
 // Auto-sync when coming back online
