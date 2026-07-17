@@ -580,7 +580,7 @@ async function updateOfflineBanner() {
 async function syncQueue() {
   const items = await dequeueAll();
   if (!items.length) { await updateOfflineBanner(); await updateChoiceOfflineBanner(); return {synced:0, failed:0}; }
-  let synced = 0, failed = 0;
+  let synced = 0, failed = 0, duplicates = [];
   for (const item of items) {
     try {
       let url, body;
@@ -604,6 +604,12 @@ async function syncQueue() {
       if (res.ok) {
         await deleteQueued(item.id);
         synced++;
+      } else if (res.status === 409) {
+        // Duplicate — remove from queue, no point retrying
+        await deleteQueued(item.id);
+        let detail = '';
+        try { detail = JSON.parse(responseText).detail; } catch {}
+        duplicates.push(detail || 'Duplicate visitor');
       } else {
         failed++;
         console.warn('Sync failed', res.status, responseText);
@@ -615,7 +621,10 @@ async function syncQueue() {
   }
   await updateOfflineBanner();
   await updateChoiceOfflineBanner();
-  return { synced, failed };
+  if (duplicates.length > 0) {
+    alert(`⚠ ${duplicates.length} visitor(s) already in system — skipped:\n${duplicates.join('\n')}`);
+  }
+  return { synced, failed, duplicates };
 }
 async function updateChoiceOfflineBanner() {
   const items = await dequeueAll();
