@@ -1,4 +1,4 @@
-const CACHE = 'fingoh-staff-v1';
+const CACHE = 'fingoh-staff-v2';
 const SHELL = ['/', '/index.html', '/Fingoh_Black.png', '/logo.png'];
 
 self.addEventListener('install', e => {
