@@ -696,6 +696,9 @@ function compressImage(file, maxPx=900, quality=0.65) {
 async function onCardPhoto(input) {
   const file = input.files[0];
   if (!file) return;
+  // Clear all fields before filling from new scan
+  ['wi_name','wi_company','wi_designation','wi_email','wi_phone','wi_city','wi_country','wi_notes']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   const statusEl = document.getElementById('scanStatus');
   const preview  = document.getElementById('cardPreview');
 
