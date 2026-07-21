@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "https://web-production-93e78d.up.railway.app/api/v1/:path*"
+      "destination": "https://api-dev.fingoh.ai/api/v1/:path*"
     },
     {
       "source": "/(.*)",
