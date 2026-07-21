@@ -26,6 +26,9 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
+  // Ignore non-http(s) requests (chrome-extension://, etc.)
+  if (!url.protocol.startsWith('http')) return;
+
   // Never cache API or auth calls — always network
   if (
     url.pathname.startsWith('/api/') ||
