@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Fingoh Staff App — capture visitor signals and manage meetings at your exhibition booth.">
+
+<!-- PWA manifest -->
+<link rel="manifest" href="/manifest.json">
+
+<!-- iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Fingoh">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144.png">
+<link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128.png">
+<link rel="apple-touch-startup-image" href="/icons/icon-512.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png">
+
+<!-- Android / Chrome -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Fingoh">
+
+<title>Fingoh Staff</title>
+<style>
+/* ── Reset & tokens ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy: #0D1B3E;
+  --blue: #2563EB;
+  --blue-light: #EFF6FF;
+  --green: #16A34A;
+  --green-light: #F0FDF4;
+  --red: #DC2626;
+  --red-light: #FEF2F2;
+  --amber: #D97706;
+  --amber-light: #FFFBEB;
+  --purple: #7C3AED;
+  --teal: #0D9488;
+  --muted: #6B7280;
+  --muted-light: #9CA3AF;
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+  --surface: #FFFFFF;
+  --bg: #F8FAFC;
+  --text: #111827;
+  --text-sub: #6B7280;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow: 0 4px 12px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+
+  --header-h: 60px;
+  --tab-h: 64px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── App shell ── */
+#app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  background: var(--bg);
+}
+
+/* ── Top header (app screens only) ── */
+#app-header {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  height: var(--header-h);
+  padding: 0 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#app-header.visible { display: flex; }
+
+.header-left { display: flex; flex-direction: column; gap: 1px; }
+.header-event { font-size: 13px; font-weight: 700; color: var(--navy); line-height: 1; }
+.header-staff { font-size: 11px; color: var(--muted); line-height: 1; }
+
+.header-right { display: flex; align-items: center; gap: 6px; }
+
+.live-pill {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 9px; border-radius: 99px;
+  background: var(--green-light);
+  border: 1px solid #86EFAC;
+  font-size: 10px; font-weight: 700; color: #15803D;
+}
+.live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+
+.icon-btn {
+  width: 34px; height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  color: var(--muted);
+  font-family: inherit;
+  transition: background .12s;
+}
+.icon-btn:active { background: var(--border-light); }
+
+/* ── Scrollable content area ── */
+.screen-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--tab-h) + var(--safe-bottom) + 16px);
+}
+
+/* No bottom padding for non-app screens */
+.screen-content.no-tabs { padding-bottom: 24px; }
+
+/* ── Bottom tab bar ── */
+#bottom-tabs {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  height: calc(var(--tab-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  flex-direction: row;
+}
+#bottom-tabs.visible { display: flex; }
+
+.tab-btn {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px;
+  border: none; background: none; cursor: pointer;
+  font-family: inherit;
+  color: var(--muted-light);
+  transition: color .12s;
+  padding: 8px 0;
+}
+.tab-btn.active { color: var(--navy); }
+.tab-icon { font-size: 20px; line-height: 1; }
+.tab-label { font-size: 10px; font-weight: 600; letter-spacing: .01em; }
+
+/* ── Screen system ── */
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* Full-page screens (email, event, passcode, choice) */
+.full-screen {
+  min-height: 100dvh;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+}
+
+/* ── Auth screens ── */
+.auth-wrap {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px 20px;
+  gap: 0;
+}
+
+.auth-logo {
+  margin-bottom: 8px;
+}
+.auth-logo img { height: 36px; display: block; }
+
+.auth-title {
+  font-size: 22px; font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 4px;
+  text-align: center;
+}
+.auth-sub {
+  font-size: 13px; color: var(--muted);
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-card {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  padding: 20px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+/* ── Inputs ── */
+.field-label {
+  display: block;
+  font-size: 11px; font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none;
+}
+input:focus, textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+textarea { resize: none; font-size: 14px; line-height: 1.5; }
+
+/* ── Buttons ── */
+.btn {
+  width: 100%; padding: 14px;
+  border: none; border-radius: var(--radius);
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: opacity .12s, transform .08s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:active { transform: scale(.98); opacity: .92; }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.btn-primary { background: var(--navy); color: white; }
+.btn-success { background: var(--green); color: white; }
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-sub);
+  font-size: 14px;
+}
+
+/* ── Error / success messages ── */
+.msg-err {
+  background: var(--red-light);
+  color: #991B1B;
+  border: 1px solid #FECACA;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-top: 10px;
+}
+.msg-ok {
+  background: var(--green-light);
+  color: #166534;
+  border: 1px solid #86EFAC;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── Event list items ── */
+.event-opt {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.event-opt:active { border-color: var(--blue); box-shadow: var(--shadow-sm); }
+.event-name { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+.event-meta { font-size: 12px; color: var(--muted); }
+
+/* ── Choice screen ── */
+.choice-btn {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 18px 16px;
+  cursor: pointer; width: 100%;
+  margin-bottom: 12px; text-align: left;
+  font-family: inherit;
+  transition: border-color .15s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+.choice-btn:active { border-color: var(--navy); box-shadow: var(--shadow); }
+.choice-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; flex-shrink: 0;
+}
+.choice-title { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+.choice-sub { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+/* ── Passcode dots ── */
+.passcode-dots { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
+.p-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--border); transition: background .15s;
+}
+
+/* ── App main: Log Signal form ── */
+.form-wrap {
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+/* Section card */
+.section-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: opacity .2s;
+}
+.section-card.locked {
+  opacity: .45;
+  pointer-events: none;
+}
+
+.section-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+.section-title {
+  font-size: 13px; font-weight: 700;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.section-sub {
+  font-size: 11px; color: var(--muted);
+  margin-top: 1px;
+}
+.section-body { padding: 14px 16px; }
+.section-body + .section-body { padding-top: 0; }
+
+/* ── Visitor search ── */
+.search-wrap { position: relative; }
+.search-input-wrap { position: relative; }
+.search-icon {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px; color: var(--muted-light);
+  pointer-events: none;
+}
+input.search-input { padding-left: 36px; font-size: 14px; }
+
+.search-drop {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden; z-index: 50;
+}
+.search-drop-item {
+  padding: 11px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  display: flex; justify-content: space-between; align-items: center;
+  transition: background .1s;
+}
+.search-drop-item:last-child { border-bottom: none; }
+.search-drop-item:active { background: var(--border-light); }
+.drop-name { font-size: 13px; font-weight: 600; color: var(--navy); }
+.drop-company { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* Selected visitor card */
+.sel-visitor {
+  margin-top: 10px;
+  background: var(--blue-light);
+  border: 1.5px solid #BFDBFE;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.sel-visitor-head {
+  padding: 10px 14px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 8px;
+}
+.sel-name { font-size: 14px; font-weight: 700; color: var(--navy); }
+.sel-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.sel-scores {
+  padding: 6px 14px 10px;
+  display: flex; align-items: center; gap: 10px;
+  border-top: 1px solid #BFDBFE;
+  font-size: 11px; color: var(--muted);
+}
+.sel-score-val { font-weight: 700; color: var(--blue); }
+
+/* ── Tier badges ── */
+.tier-badge {
+  display: inline-block;
+  padding: 3px 9px; border-radius: 99px;
+  font-size: 10px; font-weight: 700;
+  flex-shrink: 0;
+}
+.tier-badge.Hot { background: #FEE2E2; color: #991B1B; }
+.tier-badge.Warm { background: #FEF3C7; color: #92400E; }
+.tier-badge.Cool { background: #DBEAFE; color: #1E40AF; }
+.tier-badge.Cold { background: var(--border-light); color: #475569; }
+
+/* ── Score grid ── */
+.score-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+}
+.score-btn {
+  padding: 12px 4px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer; background: var(--surface);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  transition: all .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.score-num { font-size: 22px; font-weight: 800; line-height: 1; color: var(--muted-light); }
+.score-lbl { font-size: 9px; color: var(--muted-light); text-align: center; line-height: 1.2; }
+.score-btn.sel .score-num, .score-btn.sel .score-lbl { color: white; }
+
+.score-feedback {
+  margin-top: 8px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 700;
+  text-align: center;
+}
+
+/* ── Q chips ── */
+.q-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.q-chip {
+  padding: 8px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; background: var(--surface);
+  color: var(--muted);
+  font-family: inherit;
+  display: flex; align-items: center; gap: 5px;
+  transition: all .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.q-chip.sel { color: white; }
+
+.q-feedback {
+  margin-top: 8px; padding: 8px 12px;
+  background: var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 11px; color: var(--muted);
+}
+
+/* ── Toggle rows ── */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  gap: 12px;
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-left { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; }
+.toggle-emoji { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+.toggle-text {}
+.toggle-title { font-size: 13px; font-weight: 600; color: var(--navy); }
+.toggle-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+
+.toggle-track {
+  width: 44px; height: 26px;
+  border-radius: 13px;
+  background: var(--border);
+  position: relative; flex-shrink: 0;
+  transition: background .18s;
+}
+.toggle-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%; background: white;
+  position: absolute; top: 3px; left: 3px;
+  transition: left .18s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+
+/* ── Collateral buttons ── */
+.coll-btns { display: flex; gap: 6px; }
+.coll-btn {
+  flex: 1; padding: 8px 6px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px; font-weight: 600;
+  cursor: pointer; background: var(--surface);
+  color: var(--muted); font-family: inherit;
+  text-align: center;
+  transition: all .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Urgency ── */
+.urgency-grid { display: flex; gap: 6px; }
+.urg-btn {
+  flex: 1; padding: 10px 4px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px; font-weight: 600;
+  cursor: pointer; background: var(--surface);
+  color: var(--muted); font-family: inherit;
+  text-align: center;
+  transition: all .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Mode tabs (text/voice) ── */
+.mode-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.mode-tab {
+  flex: 1; padding: 8px 4px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 12px; font-weight: 600;
+  color: var(--muted); cursor: pointer;
+  font-family: inherit; text-align: center;
+  transition: all .12s;
+}
+.mode-tab.active {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: white;
+}
+
+/* ── AI result ── */
+.ai-result-card {
+  background: linear-gradient(135deg, #0D1B3E, #1E3A8A);
+  border-radius: var(--radius);
+  padding: 14px;
+  color: white;
+  margin-top: 10px;
+}
+
+/* ── Done banner ── */
+.done-banner {
+  background: var(--green-light);
+  border: 2px solid #86EFAC;
+  border-radius: var(--radius-xl);
+  padding: 36px 20px;
+  text-align: center;
+  margin: 16px;
+}
+
+/* ── Visitor card (meetings list) ── */
+.visitor-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  border-left: 4px solid transparent;
+}
+.visitor-card.Hot { border-left-color: #EF4444; }
+.visitor-card.Warm { border-left-color: #F97316; }
+.visitor-card.Cool { border-left-color: #3B82F6; }
+.visitor-card.Cold { border-left-color: #9CA3AF; }
+
+/* ── Walk-in screen ── */
+.walkin-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: var(--header-h); z-index: 90;
+}
+.back-btn {
+  width: 34px; height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; color: var(--navy);
+  flex-shrink: 0;
+}
+.walkin-title { font-size: 15px; font-weight: 700; color: var(--navy); }
+.walkin-sub { font-size: 11px; color: var(--muted); }
+
+/* Scan area */
+.scan-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.scan-btns { display: flex; }
+.scan-btn {
+  flex: 1; padding: 14px 10px;
+  background: var(--border-light);
+  border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  color: var(--navy); font-family: inherit;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 5px;
+  transition: background .12s;
+}
+.scan-btn:first-child { border-right: 1px solid var(--border); }
+.scan-btn:active { background: var(--border); }
+.scan-btn-icon { font-size: 22px; }
+.scan-preview {
+  width: 100%; display: none;
+  max-height: 180px; object-fit: cover;
+}
+.scan-status {
+  display: none; padding: 8px 14px;
+  font-size: 12px; font-weight: 600;
+  text-align: center;
+  border-top: 1px solid var(--border-light);
+}
+
+/* ── Voice recording ── */
+@keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:.85} }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.voice-idle { text-align: center; padding: 20px; }
+.voice-rec-dot {
+  width: 56px; height: 56px;
+  border-radius: 50%; background: #FEE2E2;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 10px;
+  animation: pulse 1.2s infinite;
+}
+.voice-rec-inner { width: 20px; height: 20px; border-radius: 50%; background: var(--red); }
+
+/* ── Offline banner ── */
+.offline-bar {
+  display: none;
+  background: var(--amber-light);
+  border: 1px solid #FCD34D;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 11px; font-weight: 600;
+  color: #92400E;
+  margin: 0 16px 8px;
+  align-items: center; justify-content: space-between; gap: 8px;
+}
+.offline-bar.show { display: flex; }
+.sync-btn {
+  background: var(--amber);
+  color: white; border: none;
+  border-radius: 6px; padding: 4px 10px;
+  font-size: 11px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 200;
+  align-items: flex-end; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-sheet {
+  background: var(--surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 24px 20px calc(24px + var(--safe-bottom));
+  width: 100%; max-width: 480px;
+}
+.modal-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+.modal-title { font-size: 17px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+.modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: white; border-radius: 50%;
+  animation: spin .8s linear infinite;
+  vertical-align: middle;
+}
+
+/* ── Section list label ── */
+.list-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: 0 4px;
+  margin: 14px 0 8px;
+}
+
+/* ── Meeting cards ── */
+.meeting-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+}
+.meeting-card-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.meeting-card-body { padding: 12px 16px; }
+.meeting-name { font-size: 15px; font-weight: 700; color: var(--navy); }
+.meeting-company { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.meeting-detail { font-size: 12px; color: var(--text); margin-top: 5px; }
+
+.status-pill {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 9px; border-radius: 99px;
+  flex-shrink: 0;
+}
+
+/* ── Overwrite banner ── */
+.overwrite-banner {
+  background: #FFF8F0;
+  border: 1px solid #FFD9AA;
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  margin-top: 8px;
+  font-size: 11px; color: #7A3500;
+}
+
+/* ── AI badge chips ── */
+.signal-chip {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 10px; margin: 2px;
+}
+
+/* ── Collateral hint ── */
+.coll-hint {
+  display: none;
+  font-size: 10px; color: #E11D48;
+  margin-top: 4px; font-style: italic;
+}
+
+/* ── Misc ── */
+.divider { height: 1px; background: var(--border-light); margin: 0 16px; }
+</style>
+</head>
+<body>
+
+<div id="app-shell">
+
+  <!-- ══ TOP HEADER (shown on app screens) ══ -->
+  <header id="app-header">
+    <div class="header-left">
+      <div class="header-event" id="headerEvent">—</div>
+      <div class="header-staff" id="headerStaff">—</div>
+    </div>
+    <div class="header-right">
+      <div class="live-pill"><div class="live-dot"></div>Live</div>
+      <button class="icon-btn" onclick="showChangePasscode()" title="Change passcode">🔑</button>
+      <button class="icon-btn" onclick="doLogout()" title="Sign out">↪</button>
+    </div>
+  </header>
+
+  <!-- ══ SCREENS ══ -->
+
+  <!-- EMAIL SCREEN -->
+  <div class="screen full-screen active" id="emailScreen">
+    <div class="auth-wrap">
+      <div class="auth-logo"><img src="/Fingoh_Black.png" alt="Fingoh.ai"></div>
+      <h1 class="auth-title">Staff App</h1>
+      <p class="auth-sub">Enter your work email to see your events</p>
+      <div class="auth-card">
+        <label class="field-label" for="emailInput">Your work email</label>
+        <input type="email" id="emailInput" placeholder="you@company.com"
+          autocomplete="email" onkeydown="if(event.key==='Enter')fetchEvents()">
+        <div id="emailErr" class="msg-err" style="display:none"></div>
+        <button class="btn btn-primary" onclick="fetchEvents()" id="emailBtn" style="margin-top:14px">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENT SELECT SCREEN -->
+  <div class="screen full-screen" id="eventScreen">
+    <div class="auth-wrap" style="justify-content:flex-start;padding-top:40px">
+      <div class="auth-logo"><img src="/Fingoh_Black.png" alt="Fingoh.ai"></div>
+      <h1 class="auth-title" style="margin-top:8px">Select your event</h1>
+      <p class="auth-sub">Choose the event you're working today</p>
+      <div style="width:100%" id="eventList"></div>
+      <button class="btn btn-ghost" onclick="showScreen('emailScreen')" style="margin-top:8px">← Back</button>
+    </div>
+  </div>
+
+  <!-- PASSCODE SCREEN -->
+  <div class="screen full-screen" id="passcodeScreen">
+    <div class="auth-wrap">
+      <div class="auth-logo"><img src="/Fingoh_Black.png" alt="Fingoh.ai"></div>
+      <h1 class="auth-title" id="passcodeTitle">Enter your passcode</h1>
+      <p class="auth-sub">Your manager set a passcode for your account</p>
+      <div class="passcode-dots" id="passcodeDots"></div>
+      <div class="auth-card">
+        <input type="password" id="passcodeInput" inputmode="numeric" maxlength="8"
+          placeholder="Enter passcode"
+          style="text-align:center;font-size:22px;letter-spacing:8px"
+          onkeydown="if(event.key==='Enter')submitPasscode()">
+        <div id="passcodeErr" style="display:none;color:var(--red);font-size:12px;text-align:center;margin-top:8px"></div>
+        <button class="btn btn-primary" onclick="submitPasscode()" id="passcodeBtn" style="margin-top:14px">Confirm →</button>
+        <button class="btn btn-ghost" onclick="showScreen('eventScreen')" style="margin-top:8px">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHOICE SCREEN -->
+  <div class="screen full-screen" id="choiceScreen">
+    <div class="auth-wrap" style="justify-content:flex-start;padding-top:36px">
+      <div class="auth-logo"><img src="/Fingoh_Black.png" alt="Fingoh.ai"></div>
+      <h1 class="auth-title" style="margin-top:8px">Who are you meeting?</h1>
+      <p class="auth-sub">Choose visitor type to get started</p>
+
+      <div style="width:100%">
+        <button class="choice-btn" onclick="startProspect()">
+          <div class="choice-icon" style="background:#EFF6FF">📋</div>
+          <div>
+            <div class="choice-title">Prospect</div>
+            <div class="choice-sub">Pre-registered visitor. Log signals and book meetings.</div>
+          </div>
+        </button>
+        <button class="choice-btn" onclick="startWalkIn()">
+          <div class="choice-icon" style="background:var(--green-light)">🚶</div>
+          <div>
+            <div class="choice-title">Walk-in Visitor</div>
+            <div class="choice-sub">Not in the system. Scan their card or enter details.</div>
+          </div>
+        </button>
+      </div>
+
+      <div id="choiceOfflineBar" class="offline-bar" style="margin:0;width:100%">
+        <span>📶 Offline — <span id="choicePendingCount">0</span> pending</span>
+        <button class="sync-btn" onclick="syncQueueFromChoice()">Sync now</button>
+      </div>
+
+      <button onclick="doLogout()" style="margin-top:16px;background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit">Sign out</button>
+    </div>
+  </div>
+
+  <!-- WALK-IN SCREEN -->
+  <div class="screen" id="walkInScreen">
+    <div class="screen-content no-tabs">
+      <div class="walkin-header">
+        <button class="back-btn" onclick="showScreen('choiceScreen')">←</button>
+        <div>
+          <div class="walkin-title">Walk-in Visitor</div>
+          <div class="walkin-sub">Scan card or enter details manually</div>
+        </div>
+      </div>
+
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div id="walkInOfflineNote" style="display:none" class="offline-bar show" style="margin:0">
+          📶 Offline — this entry will sync when connected
+        </div>
+
+        <!-- Card scan -->
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-title">Scan business card</div>
+          </div>
+          <div class="section-body" style="padding:0">
+            <img id="cardPreview" class="scan-preview" alt="">
+            <div class="scan-area" style="border:none;border-radius:0">
+              <div class="scan-btns">
+                <label class="scan-btn">
+                  <span class="scan-btn-icon">📷</span>
+                  <span>Camera</span>
+                  <input type="file" accept="image/*" capture="environment" id="cardCameraInput" style="display:none" onchange="onCardPhoto(this)">
+                </label>
+                <label class="scan-btn">
+                  <span class="scan-btn-icon">🖼</span>
+                  <span>Upload</span>
+                  <input type="file" accept="image/*" id="cardUploadInput" style="display:none" onchange="onCardPhoto(this)">
+                </label>
+              </div>
+            </div>
+            <div id="scanStatus" class="scan-status"></div>
+          </div>
+        </div>
+
+        <!-- Details form -->
+        <div class="section-card">
+          <div class="section-head">
+            <div class="section-title">Confirm details</div>
+          </div>
+          <div class="section-body" style="display:flex;flex-direction:column;gap:8px">
+            <input type="text" id="wi_name" placeholder="Full name *">
+            <input type="text" id="wi_company" placeholder="Company">
+            <input type="text" id="wi_designation" placeholder="Job title">
+            <input type="email" id="wi_email" placeholder="Email">
+            <input type="tel" id="wi_phone" placeholder="Phone">
+            <input type="text" id="wi_city" placeholder="City">
+            <input type="text" id="wi_country" placeholder="Country">
+            <textarea id="wi_notes" placeholder="Quick notes (optional)" style="height:70px"></textarea>
+          </div>
+          <div style="padding:0 16px 16px">
+            <button class="btn btn-success" onclick="saveWalkIn()" id="walkInSaveBtn">Save Walk-in Visitor</button>
+            <div id="walkInErr" class="msg-err" style="display:none;margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP MAIN SCREEN -->
+  <div class="screen" id="appScreen">
+    <div class="screen-content" id="appScrollArea">
+
+      <!-- Offline banner -->
+      <div id="offlineBar" class="offline-bar" style="margin-top:10px">
+        <span>📶 Offline — <span id="pendingCount">0</span> queued</span>
+        <button class="sync-btn" onclick="syncQueueFromApp()">Sync now</button>
+      </div>
+
+      <!-- LOG SIGNAL TAB -->
+      <div id="logTab">
+
+        <!-- Done banner -->
+        <div id="doneView" style="display:none">
+          <div class="done-banner">
+            <div style="font-size:40px;color:var(--green);margin-bottom:12px">✓</div>
+            <div style="font-size:16px;font-weight:700;color:#14532D;margin-bottom:6px">Signal logged!</div>
+            <div id="doneMsg" style="font-size:13px;color:#166534"></div>
+          </div>
+        </div>
+
+        <div id="formView" class="form-wrap">
+
+          <!-- Step 1: Find visitor -->
+          <div class="section-card" id="step1card">
+            <div class="section-head">
+              <div class="section-title">Find visitor</div>
+            </div>
+            <div class="section-body">
+              <div class="search-wrap">
+                <div class="search-input-wrap">
+                  <span class="search-icon">🔍</span>
+                  <input class="search-input" type="text" id="searchInput"
+                    placeholder="Name or company…" oninput="onSearch()">
+                </div>
+                <div id="searchDrop" style="display:none" class="search-drop"></div>
+              </div>
+              <div id="selVisitor" style="display:none" class="sel-visitor">
+                <div class="sel-visitor-head">
+                  <div>
+                    <div class="sel-name" id="selName"></div>
+                    <div class="sel-meta" id="selMeta"></div>
+                  </div>
+                  <div id="selBadges"></div>
+                </div>
+                <div class="sel-scores">
+                  <span>IEI Score: <span class="sel-score-val" id="selScore"></span></span>
+                  <span id="selReason"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Conversation quality -->
+          <div class="section-card locked" id="step2">
+            <div class="section-head">
+              <div class="section-title">Conversation quality</div>
+            </div>
+            <div class="section-body">
+              <div class="score-grid">
+                <div class="score-btn" onclick="setScore(1)" id="sb1"><span class="score-num">1</span><span class="score-lbl">Pass-through</span></div>
+                <div class="score-btn" onclick="setScore(2)" id="sb2"><span class="score-num">2</span><span class="score-lbl">Polite interest</span></div>
+                <div class="score-btn" onclick="setScore(3)" id="sb3"><span class="score-num">3</span><span class="score-lbl">Engaged</span></div>
+                <div class="score-btn" onclick="setScore(4)" id="sb4"><span class="score-num">4</span><span class="score-lbl">Strong evaluator</span></div>
+                <div class="score-btn" onclick="setScore(5)" id="sb5"><span class="score-num">5</span><span class="score-lbl">Active buyer</span></div>
+              </div>
+              <div id="scoreFeedback" style="display:none" class="score-feedback"></div>
+            </div>
+          </div>
+
+          <!-- Step 3: Questions -->
+          <div class="section-card locked" id="step3">
+            <div class="section-head">
+              <div class="section-title">Questions asked</div>
+              <div class="section-sub">Select all that apply</div>
+            </div>
+            <div class="section-body">
+              <div class="q-chips" id="qChips">
+                <button class="q-chip" onclick="toggleQ(this,'Pricing')" data-col="#16A34A">$ Pricing</button>
+                <button class="q-chip" onclick="toggleQ(this,'Implementation')" data-col="#2563EB">⚙ Implementation</button>
+                <button class="q-chip" onclick="toggleQ(this,'Technical')" data-col="#7C3AED">🔧 Technical</button>
+                <button class="q-chip" onclick="toggleQ(this,'Competitive')" data-col="#D97706">⚖ Competitive</button>
+                <button class="q-chip" onclick="toggleQ(this,'Timeline / delivery')" data-col="#0D9488">📅 Timeline</button>
+                <button class="q-chip" onclick="toggleQ(this,'General')" data-col="#94A3B8">💬 General</button>
+              </div>
+              <div id="qFeedback" style="display:none" class="q-feedback"></div>
+            </div>
+          </div>
+
+          <!-- Step 4: On-site signals -->
+          <div class="section-card locked" id="step4">
+            <div class="section-head">
+              <div class="section-title">On-site signals</div>
+            </div>
+            <div class="section-body" style="padding-top:4px;padding-bottom:4px">
+              <div class="toggle-row" id="togRet" onclick="toggleSignal('ret')">
+                <div class="toggle-left">
+                  <span class="toggle-emoji">↩</span>
+                  <div class="toggle-text">
+                    <div class="toggle-title" id="togRetLabel">Return visitor</div>
+                    <div class="toggle-desc">Second visit to your booth today</div>
+                  </div>
+                </div>
+                <div class="toggle-track" id="trackRet"><div class="toggle-thumb" id="thumbRet"></div></div>
+              </div>
+              <div class="toggle-row" id="togDemo" onclick="toggleSignal('demo')">
+                <div class="toggle-left">
+                  <span class="toggle-emoji">▶</span>
+                  <div class="toggle-text">
+                    <div class="toggle-title" id="togDemoLabel">Demo attended + Q&A</div>
+                    <div class="toggle-desc">Attended demo and stayed for questions</div>
+                  </div>
+                </div>
+                <div class="toggle-track" id="trackDemo"><div class="toggle-thumb" id="thumbDemo"></div></div>
+              </div>
+              <div class="toggle-row" id="togBadge" onclick="toggleSignal('badge')">
+                <div class="toggle-left">
+                  <span class="toggle-emoji">◉</span>
+                  <div class="toggle-text">
+                    <div class="toggle-title">Badge scanned</div>
+                    <div class="toggle-desc">Physical presence confirmed</div>
+                  </div>
+                </div>
+                <div class="toggle-track" id="trackBadge"><div class="toggle-thumb" id="thumbBadge"></div></div>
+              </div>
+              <div class="toggle-row" id="togBG" onclick="toggleSignal('bg')">
+                <div class="toggle-left">
+                  <span class="toggle-emoji">👥</span>
+                  <div class="toggle-text">
+                    <div class="toggle-title">Buying group present</div>
+                    <div class="toggle-desc">Decision-maker or colleague joined</div>
+                  </div>
+                </div>
+                <div class="toggle-track" id="trackBG"><div class="toggle-thumb" id="thumbBG"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Meeting & collateral -->
+          <div class="section-card locked" id="step5">
+            <div class="section-head">
+              <div class="section-title">Meeting & collateral</div>
+              <div class="section-sub">Optional</div>
+            </div>
+            <div class="section-body" style="padding-top:4px;padding-bottom:4px">
+              <div class="toggle-row" id="togMtg" onclick="toggleSignal('mtg')">
+                <div class="toggle-left">
+                  <span class="toggle-emoji">📅</span>
+                  <div class="toggle-text">
+                    <div class="toggle-title">Follow-up meeting booked</div>
+                    <div class="toggle-desc">Visitor agreed to a follow-up</div>
+                  </div>
+                </div>
+                <div class="toggle-track" id="trackMtg"><div class="toggle-thumb" id="thumbMtg"></div></div>
+              </div>
+            </div>
+            <div class="section-body">
+              <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">Collateral requested</div>
+              <div class="coll-btns">
+                <button class="coll-btn" onclick="setColl(this,'none')" id="coll_none">None</button>
+                <button class="coll-btn" onclick="setColl(this,'generic')" id="coll_generic">Generic brochure</button>
+                <button class="coll-btn" onclick="setColl(this,'specific')" id="coll_specific">Specific asset</button>
+              </div>
+              <div id="collHint" class="coll-hint">Specific asset = high intent (+5 pts)</div>
+            </div>
+          </div>
+
+          <!-- Step 6: Buying urgency -->
+          <div class="section-card locked" id="step6">
+            <div class="section-head">
+              <div class="section-title">Buying urgency</div>
+              <div class="section-sub">Your assessment</div>
+            </div>
+            <div class="section-body">
+              <div class="urgency-grid">
+                <button class="urg-btn" onclick="setUrgency(this,'low')" id="urg_low">Low<br><span style="font-weight:400;font-size:10px">Exploring</span></button>
+                <button class="urg-btn" onclick="setUrgency(this,'medium')" id="urg_medium">Medium<br><span style="font-weight:400;font-size:10px">Evaluating</span></button>
+                <button class="urg-btn" onclick="setUrgency(this,'high')" id="urg_high">High<br><span style="font-weight:400;font-size:10px">Ready to buy</span></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 7: Conversation capture -->
+          <div class="section-card locked" id="step8">
+            <div class="section-head">
+              <div class="section-title">Conversation notes</div>
+              <div class="section-sub">Type, voice, or AI analysis</div>
+            </div>
+            <div class="section-body">
+              <div class="mode-tabs">
+                <button class="mode-tab active" onclick="setMode('text')" id="modeText">✏️ Type</button>
+                <button class="mode-tab" onclick="setMode('voice')" id="modeVoice">🎙 Voice</button>
+                <button class="mode-tab" onclick="runAI()" id="modeAI">✦ AI Analyse</button>
+              </div>
+
+              <!-- Text mode -->
+              <div id="textMode">
+                <textarea id="captureField" style="height:100px"
+                  placeholder="Budget, timeline, authority, requirements…"></textarea>
+                <div style="font-size:10px;color:var(--muted);margin-top:5px">Mention specifics to add signal weight.</div>
+              </div>
+
+              <!-- Voice mode -->
+              <div id="voiceMode" style="display:none">
+                <div id="voiceIdle" class="voice-idle">
+                  <div style="font-size:48px;margin-bottom:8px">🎙</div>
+                  <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Tap to record your summary</div>
+                  <button class="btn btn-primary" onclick="startVoice()" style="width:auto;padding:10px 24px">Start recording</button>
+                </div>
+                <div id="voiceRecording" style="display:none;text-align:center;padding:20px">
+                  <div class="voice-rec-dot"><div class="voice-rec-inner"></div></div>
+                  <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px">Recording… <span id="recTimer">0s</span></div>
+                  <div style="font-size:11px;color:var(--muted);margin-bottom:14px" id="interimText">Speak now…</div>
+                  <button class="btn" onclick="stopVoice()" style="background:var(--red);color:white;width:auto;padding:10px 24px">Stop</button>
+                </div>
+                <div id="voiceTranscript" style="display:none">
+                  <div style="background:var(--green-light);border:1px solid #86EFAC;border-radius:var(--radius);padding:12px;margin-bottom:10px">
+                    <div style="font-size:10px;font-weight:700;color:#14532D;margin-bottom:6px">TRANSCRIPT</div>
+                    <div style="font-size:12px;color:#166534;line-height:1.6" id="transcriptText"></div>
+                  </div>
+                  <button class="btn btn-ghost" onclick="retryVoice()" style="font-size:12px;padding:9px">Re-record</button>
+                </div>
+              </div>
+
+              <!-- AI result -->
+              <div id="aiLoading" style="display:none;text-align:center;padding:16px">
+                <div style="width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px"></div>
+                <div style="font-size:12px;color:var(--muted)">Analysing…</div>
+              </div>
+
+              <div id="aiResult" style="display:none;margin-top:10px">
+                <div class="ai-result-card">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                    <span style="font-size:12px;font-weight:700">AI Analysis</span>
+                    <span id="aiIntentBadge" style="font-size:10px;padding:3px 9px;border-radius:99px;font-weight:700"></span>
+                  </div>
+                  <p id="aiTranscriptPreview" style="display:none;font-size:10px;color:rgba(255,255,255,.5);font-style:italic;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:8px"></p>
+                  <div style="display:flex;gap:16px;margin-bottom:10px">
+                    <div style="text-align:center">
+                      <div style="font-size:22px;font-weight:800" id="aiDelta"></div>
+                      <div style="font-size:9px;color:rgba(255,255,255,.5)">SCORE DELTA</div>
+                    </div>
+                    <div style="flex:1">
+                      <p style="font-size:11px;color:rgba(255,255,255,.8);margin:0;font-style:italic" id="aiAction"></p>
+                    </div>
+                  </div>
+                  <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:4px;font-weight:600">BUYING SIGNALS</div>
+                  <div id="aiBuyingSignals" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
+                  <div id="aiRedFlagsWrap" style="display:none">
+                    <div style="font-size:10px;color:#FCA5A5;margin-bottom:4px;font-weight:600">RED FLAGS</div>
+                    <div id="aiRedFlags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
+                  </div>
+                  <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:8px;margin-top:4px">
+                    <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:3px;font-weight:600">FOLLOW-UP HOOK</div>
+                    <p style="font-size:11px;color:rgba(255,255,255,.75);margin:0;font-style:italic" id="aiFollowUp"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div>
+            <div id="submitErr" class="msg-err" style="display:none;margin-bottom:8px"></div>
+            <button class="btn btn-success" onclick="submitSignal()" id="submitBtn">Log signal →</button>
+          </div>
+
+        </div><!-- /formView -->
+      </div><!-- /logTab -->
+
+      <!-- MEETINGS TAB -->
+      <div id="meetingsTab" style="display:none">
+        <div style="padding:16px">
+          <div id="meetingsList"></div>
+        </div>
+      </div>
+
+    </div><!-- /screen-content -->
+  </div><!-- /appScreen -->
+
+  <!-- ══ BOTTOM TAB BAR ══ -->
+  <nav id="bottom-tabs">
+    <button class="tab-btn active" id="tabLog" onclick="setAppTab('log')">
+      <span class="tab-icon">📝</span>
+      <span class="tab-label">Log Signal</span>
+    </button>
+    <button class="tab-btn" id="tabMeetings" onclick="setAppTab('meetings')">
+      <span class="tab-icon">📅</span>
+      <span class="tab-label">Meetings</span>
+    </button>
+  </nav>
+
+</div><!-- /app-shell -->
+
+<!-- ══ CHANGE PASSCODE MODAL ══ -->
+<div id="cpModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Change Passcode</div>
+    <div class="modal-sub">Default is <strong>1234</strong>. Set something only you know.</div>
+    <label class="field-label">Current passcode</label>
+    <input type="password" id="cpCurrent" inputmode="numeric" placeholder="Current passcode" style="margin-bottom:12px">
+    <label class="field-label">New passcode</label>
+    <input type="password" id="cpNew" inputmode="numeric" placeholder="Min 4 characters" style="margin-bottom:12px">
+    <label class="field-label">Confirm new passcode</label>
+    <input type="password" id="cpConfirm" inputmode="numeric" placeholder="Repeat new passcode"
+      style="margin-bottom:12px" onkeydown="if(event.key==='Enter')submitChangePasscode()">
+    <div id="cpErr" style="display:none;color:var(--red);font-size:12px;margin-bottom:10px"></div>
+    <div id="cpSuccess" style="display:none;color:var(--green);font-size:12px;font-weight:600;margin-bottom:10px">✓ Passcode updated!</div>
+    <button id="cpBtn" onclick="submitChangePasscode()" class="btn btn-primary" style="margin-bottom:10px">Save new passcode</button>
+    <button onclick="hideChangePasscode()" class="btn btn-ghost">Cancel</button>
+  </div>
+</div>
+
+<script>
+const API = "/api/v1";
+const scoreColors = {1:"#94A3B8",2:"#64748B",3:"#EAB308",4:"#3B82F6",5:"#16A34A"};
+const scoreLabels = {1:"Pass-through",2:"Polite interest",3:"Engaged",4:"Strong evaluator",5:"Active buyer"};
+const toggleColors = {ret:"#16A34A",demo:"#2563EB",badge:"#64748B",bg:"#7C3AED",mtg:"#0D9488"};
+
+let state = {
+  staff:null, event_id:null, event_name:null,
+  visitors:[], sel:null, query:"",
+  score:null, qTypes:[], ret:false, demo:false, badge:false, bg:false, mtg:false,
+  collateral:"", urgency:"", notes:"", submitting:false
+};
+let cachedEvents = [];
+let cachedMeetings = [];
+
+// Restore session
+window.addEventListener('load',()=>{
+  try {
+    const s = JSON.parse(sessionStorage.getItem('fingoh_staff')||'null');
+    if(s?.staff && s?.event_id) {
+      Object.assign(state, s);
+      enterAppMode();
+      loadVisitors();
+      loadMeetings();
+    }
+  } catch {}
+});
+
+function saveSession() {
+  sessionStorage.setItem('fingoh_staff', JSON.stringify({
+    staff:state.staff, event_id:state.event_id, event_name:state.event_name
+  }));
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+
+  const isApp = id === 'appScreen';
+  const isWalkIn = id === 'walkInScreen';
+  document.getElementById('app-header').classList.toggle('visible', isApp);
+  document.getElementById('bottom-tabs').classList.toggle('visible', isApp);
+}
+
+function enterAppMode() {
+  document.getElementById('headerEvent').textContent = state.event_name || '—';
+  document.getElementById('headerStaff').textContent = state.staff?.name ? `Logging as ${state.staff.name}` : '—';
+  showScreen('appScreen');
+}
+
+// ── Choice screen ─────────────────────────────────────────────────────────
+function startProspect() { showScreen('appScreen'); }
+function startWalkIn() {
+  clearWalkInForm();
+  if (!navigator.onLine) document.getElementById('walkInOfflineNote').style.display='flex';
+  else document.getElementById('walkInOfflineNote').style.display='none';
+  showScreen('walkInScreen');
+}
+
+// ── IndexedDB offline queue ───────────────────────────────────────────────
+let _db = null;
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (_db) return resolve(_db);
+    const req = indexedDB.open('fingoh_staff', 1);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore('queue', {keyPath:'id', autoIncrement:true});
+    };
+    req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+    req.onerror   = () => reject(req.error);
+  });
+}
+async function enqueue(type, payload) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('queue','readwrite');
+    tx.objectStore('queue').add({type, payload, ts: Date.now()});
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dequeueAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('queue','readonly');
+    const req = tx.objectStore('queue').getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function deleteQueued(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('queue','readwrite');
+    tx.objectStore('queue').delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function updateOfflineBanner() {
+  const items = await dequeueAll();
+  const bar = document.getElementById('offlineBar');
+  const count = document.getElementById('pendingCount');
+  if (!bar) return;
+  if (!navigator.onLine || items.length > 0) {
+    bar.classList.add('show');
+    if (count) count.textContent = items.length;
+  } else {
+    bar.classList.remove('show');
+  }
+}
+async function syncQueue() {
+  const items = await dequeueAll();
+  if (!items.length) { await updateOfflineBanner(); await updateChoiceOfflineBanner(); return {synced:0,failed:0}; }
+  let synced = 0, failed = 0, duplicates = [];
+  for (const item of items) {
+    try {
+      let url, body;
+      if (item.type === 'walk_in') { url = `${API}/audience/walk-in`; body = item.payload; }
+      else if (item.type === 'signal') { url = `${API}/audience/signal`; body = item.payload; }
+      if (!url) { await deleteQueued(item.id); continue; }
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      let res;
+      try {
+        res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), signal:controller.signal });
+      } finally { clearTimeout(timer); }
+      const responseText = await res.text();
+      if (res.ok) { await deleteQueued(item.id); synced++; }
+      else if (res.status === 409) {
+        await deleteQueued(item.id);
+        let detail = '';
+        try { detail = JSON.parse(responseText).detail; } catch {}
+        duplicates.push(detail || 'Duplicate visitor');
+      } else { failed++; }
+    } catch(e) { failed++; }
+  }
+  await updateOfflineBanner();
+  await updateChoiceOfflineBanner();
+  if (duplicates.length > 0) alert(`⚠ ${duplicates.length} visitor(s) already in system — skipped:\n${duplicates.join('\n')}`);
+  return { synced, failed, duplicates };
+}
+async function updateChoiceOfflineBanner() {
+  const items = await dequeueAll();
+  const bar = document.getElementById('choiceOfflineBar');
+  const count = document.getElementById('choicePendingCount');
+  if (!bar) return;
+  if (items.length > 0) { bar.classList.add('show'); if (count) count.textContent = items.length; }
+  else bar.classList.remove('show');
+}
+async function syncQueueFromChoice() {
+  const btn = document.querySelector('#choiceOfflineBar .sync-btn');
+  if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
+  const result = await syncQueue();
+  if (btn) { btn.disabled = false; btn.textContent = result?.synced > 0 && result?.failed === 0 ? '✓ Synced!' : 'Sync now'; setTimeout(()=>{ if(btn) btn.textContent='Sync now'; },2000); }
+}
+async function syncQueueFromApp() {
+  const btn = document.querySelector('#offlineBar .sync-btn');
+  if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
+  const result = await syncQueue();
+  if (btn) { btn.disabled = false; btn.textContent = result?.synced > 0 && result?.failed === 0 ? '✓ Synced!' : 'Sync now'; setTimeout(()=>{ if(btn) btn.textContent='Sync now'; },2000); }
+}
+window.addEventListener('online',  () => { syncQueue(); updateOfflineBanner(); updateChoiceOfflineBanner(); });
+window.addEventListener('offline', () => { updateOfflineBanner(); updateChoiceOfflineBanner(); });
+
+// ── Business card scan ───────────────────────────────────────────────────
+function compressImage(file, maxPx=900, quality=0.65) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = url;
+  });
+}
+async function onCardPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  ['wi_name','wi_company','wi_designation','wi_email','wi_phone','wi_city','wi_country','wi_notes']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  const statusEl = document.getElementById('scanStatus');
+  const preview  = document.getElementById('cardPreview');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+  statusEl.style.display = 'block';
+  statusEl.style.background = '#EFF6FF'; statusEl.style.color = '#1E40AF';
+  statusEl.textContent = '🔍 Scanning card…';
+  try {
+    const b64 = await compressImage(file);
+    if (!navigator.onLine) {
+      statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
+      statusEl.textContent = '📶 Offline — fill details manually';
+      return;
+    }
+    const res = await fetch(`${API}/audience/scan-card`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image_base64: b64, event_id: state.event_id})
+    });
+    const data = await res.json();
+    if (res.ok && data.contact) {
+      const c = data.contact;
+      if (c.name) document.getElementById('wi_name').value = c.name;
+      if (c.company) document.getElementById('wi_company').value = c.company;
+      if (c.designation) document.getElementById('wi_designation').value = c.designation;
+      if (c.email) document.getElementById('wi_email').value = c.email;
+      if (c.phone) document.getElementById('wi_phone').value = c.phone;
+      if (c.city) document.getElementById('wi_city').value = c.city;
+      if (c.country) document.getElementById('wi_country').value = c.country;
+      statusEl.style.background = '#F0FDF4'; statusEl.style.color = '#166534';
+      statusEl.textContent = '✓ Card scanned — review and save';
+    } else {
+      statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
+      statusEl.textContent = '⚠ Could not read card — fill manually';
+    }
+  } catch(e) {
+    statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
+    statusEl.textContent = '⚠ Scan failed — fill manually';
+  }
+}
+function clearWalkInForm() {
+  ['wi_name','wi_company','wi_designation','wi_email','wi_phone','wi_city','wi_country','wi_notes']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  const prev = document.getElementById('cardPreview');
+  if (prev) { prev.style.display='none'; prev.src=''; }
+  const st = document.getElementById('scanStatus');
+  if (st) st.style.display='none';
+  const err = document.getElementById('walkInErr');
+  if (err) err.style.display='none';
+}
+async function saveWalkIn() {
+  const name = document.getElementById('wi_name').value.trim();
+  const errEl = document.getElementById('walkInErr');
+  const btn = document.getElementById('walkInSaveBtn');
+  errEl.style.display='none';
+  if (!name) { errEl.textContent='Name is required'; errEl.style.display='block'; return; }
+  const payload = {
+    event_id: state.event_id, staff_id: state.staff?.id || '',
+    name,
+    company: document.getElementById('wi_company').value.trim(),
+    designation: document.getElementById('wi_designation').value.trim(),
+    email: document.getElementById('wi_email').value.trim(),
+    phone: document.getElementById('wi_phone').value.trim(),
+    city: document.getElementById('wi_city').value.trim(),
+    country: document.getElementById('wi_country').value.trim(),
+    notes: document.getElementById('wi_notes').value.trim(),
+  };
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Saving…';
+  if (!navigator.onLine) {
+    await enqueue('walk_in', payload);
+    await updateOfflineBanner(); await updateChoiceOfflineBanner();
+    btn.disabled=false; btn.innerHTML='Save Walk-in Visitor';
+    clearWalkInForm(); showScreen('choiceScreen');
+    alert(`✓ ${name} saved locally — tap "Sync now" when connected`);
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/audience/walk-in`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const data = await res.json();
+    if (res.status === 409) { errEl.textContent = `⚠ ${data.detail}`; errEl.style.display='block'; btn.disabled=false; btn.innerHTML='Save Walk-in Visitor'; return; }
+    if (!res.ok) throw new Error(data.detail || 'Save failed');
+    clearWalkInForm(); showScreen('choiceScreen'); loadVisitors();
+    alert(`✓ ${name} captured as walk-in`);
+  } catch(e) {
+    await enqueue('walk_in', payload); await updateOfflineBanner(); await updateChoiceOfflineBanner();
+    clearWalkInForm(); showScreen('choiceScreen');
+    alert(`✓ ${name} saved locally — tap "Sync now" when connected`);
+  }
+  btn.disabled=false; btn.innerHTML='Save Walk-in Visitor';
+}
+
+function doLogout() {
+  sessionStorage.removeItem('fingoh_staff');
+  cachedMeetings = [];
+  Object.assign(state, {staff:null,event_id:null,event_name:null,visitors:[],sel:null,score:null,qTypes:[],ret:false,demo:false,badge:false,bg:false,mtg:false,collateral:'',urgency:''});
+  document.getElementById('emailInput').value = '';
+  document.getElementById('app-header').classList.remove('visible');
+  document.getElementById('bottom-tabs').classList.remove('visible');
+  try { resetForm(); } catch(e) {}
+  showScreen('emailScreen');
+}
+
+// ── Email → Events ────────────────────────────────────────────────────────
+async function fetchEvents() {
+  const email = document.getElementById('emailInput').value.trim();
+  const errEl = document.getElementById('emailErr');
+  const btn = document.getElementById('emailBtn');
+  errEl.style.display='none';
+  if(!email||!email.includes('@')) { errEl.textContent='Please enter a valid email'; errEl.style.display='block'; return; }
+  btn.innerHTML='<span class="spinner"></span>Looking up…'; btn.disabled=true;
+  state.staffEmail = email;
+  try {
+    const res = await fetch(`${API}/events/public/by-email/${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if(!res.ok||!data.length) { errEl.textContent = data.detail||'No events found for this email.'; errEl.style.display='block'; btn.innerHTML='Continue →'; btn.disabled=false; return; }
+    cachedEvents = data;
+    document.getElementById('eventList').innerHTML = data.map((ev,i)=>`
+      <div class="event-opt" onclick="selectEvent(${i})">
+        <div class="event-name">${ev.name}</div>
+        <div class="event-meta">${ev.venue||''}${ev.date_from?' · '+ev.date_from.slice(0,10):''}</div>
+      </div>
+    `).join('');
+    showScreen('eventScreen');
+  } catch(e) { errEl.textContent='Connection error. Try again.'; errEl.style.display='block'; }
+  btn.innerHTML='Continue →'; btn.disabled=false;
+}
+async function selectEvent(idx) {
+  const ev = cachedEvents[idx];
+  state._pendingEvent = ev;
+  document.getElementById('passcodeTitle').textContent = 'Enter your passcode';
+  document.getElementById('passcodeErr').style.display = 'none';
+  document.getElementById('passcodeInput').value = '';
+  showScreen('passcodeScreen');
+  setTimeout(() => document.getElementById('passcodeInput').focus(), 200);
+}
+async function _doVerifyLogin(passcode) {
+  const ev = state._pendingEvent;
+  if (!ev) return;
+  const btn = document.getElementById('passcodeBtn');
+  if (btn) { btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Verifying…'; }
+  try {
+    const body = { email: state.staffEmail, event_id: ev.id };
+    if (passcode) body.passcode = passcode;
+    const res = await fetch(`${API}/staff/verify-login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (res.status === 401) {
+      document.getElementById('passcodeTitle').textContent = passcode ? 'Incorrect passcode, try again' : 'Enter your passcode';
+      const errEl = document.getElementById('passcodeErr');
+      if (passcode) { errEl.textContent='Incorrect passcode. Please try again.'; errEl.style.display='block'; }
+      else errEl.style.display='none';
+      document.getElementById('passcodeInput').value = '';
+      showScreen('passcodeScreen');
+      setTimeout(() => document.getElementById('passcodeInput').focus(), 200);
+      if (btn) { btn.disabled=false; btn.innerHTML='Confirm →'; }
+      return;
+    }
+    if (!res.ok) { alert(data.detail||'Login failed'); if(btn){btn.disabled=false;btn.innerHTML='Confirm →';} return; }
+    state.staff = data; state.event_id = ev.id; state.event_name = ev.name;
+    state._pendingEvent = null;
+    saveSession();
+    enterAppMode();
+    loadVisitors();
+    loadMeetings();
+  } catch(e) {
+    alert('Connection error');
+    if (btn) { btn.disabled=false; btn.innerHTML='Confirm →'; }
+  }
+}
+async function submitPasscode() {
+  const passcode = document.getElementById('passcodeInput').value.trim();
+  if (!passcode) { document.getElementById('passcodeErr').textContent='Please enter your passcode.'; document.getElementById('passcodeErr').style.display='block'; return; }
+  await _doVerifyLogin(passcode);
+}
+
+// ── Visitors ──────────────────────────────────────────────────────────────
+async function loadVisitors() {
+  try {
+    const res = await fetch(`${API}/audience/visitors/${state.event_id}`);
+    if(res.ok) state.visitors = await res.json();
+  } catch {}
+}
+
+// ── App tabs ──────────────────────────────────────────────────────────────
+function setAppTab(tab) {
+  document.getElementById('tabLog').classList.toggle('active', tab==='log');
+  document.getElementById('tabMeetings').classList.toggle('active', tab==='meetings');
+  document.getElementById('logTab').style.display = tab==='log' ? '' : 'none';
+  document.getElementById('meetingsTab').style.display = tab==='meetings' ? '' : 'none';
+  if (tab==='meetings') loadMeetings();
+}
+
+// ── Meetings ──────────────────────────────────────────────────────────────
+const MEETING_STATUS_COLORS = {
+  pending:{bg:'#FFFBEB',fg:'#D97706'}, accepted:{bg:'#EFF6FF',fg:'#2563EB'},
+  declined:{bg:'#FEF2F2',fg:'#DC2626'}, completed:{bg:'#F0FDF4',fg:'#16A34A'},
+  cancelled:{bg:'#F8FAFC',fg:'#64748B'}
+};
+let meetingCapture = {};
+function getCapture(id) {
+  if (!meetingCapture[id]) meetingCapture[id] = { mode:'text', notes:'', startTime:null, endTime:null, ai:null, transcript:'' };
+  return meetingCapture[id];
+}
+let mRecognition = null;
+let mRecInterval = null;
+let mRecSeconds = 0;
+let mRecMeetingId = null;
+
+async function loadMeetings() {
+  if (!state.event_id) return;
+  const listEl = document.getElementById('meetingsList');
+  if (listEl && !cachedMeetings.length) listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Loading meetings…</div>';
+  try {
+    const res = await fetch(`${API}/meetings/staff/${state.event_id}`);
+    if (res.ok) cachedMeetings = await res.json();
+  } catch {}
+  renderMeetings();
+}
+function syncNotes(id) {
+  const el = document.getElementById(`notes-${id}`);
+  if (el) getCapture(id).notes = el.value;
+}
+function renderMeetings() {
+  const el = document.getElementById('meetingsList');
+  if (!el) return;
+  if (!cachedMeetings.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--muted);font-size:13px">No meetings yet for this event.</div>';
+    return;
+  }
+  const upcoming  = cachedMeetings.filter(m => m.status !== 'completed');
+  const completed = cachedMeetings.filter(m => m.status === 'completed').sort((a,b)=>new Date(b.completed_at||0)-new Date(a.completed_at||0));
+
+  const sectionLabel = (label, count) => `<div class="list-label">${label} (${count})</div>`;
+
+  const renderUpcomingCard = (m) => {
+    const c = m.audience_contacts || {};
+    const dt = m.proposed_datetime ? new Date(m.proposed_datetime) : null;
+    const dtFmt = dt ? dt.toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : '—';
+    const sc = MEETING_STATUS_COLORS.accepted;
+    const cap = getCapture(m.id);
+    const startFmt = cap.startTime ? new Date(cap.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : null;
+    const endFmt   = cap.endTime   ? new Date(cap.endTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})   : null;
+    return `
+      <div class="meeting-card">
+        <div class="meeting-card-head">
+          <div>
+            <div class="meeting-name">${c.name||c.email||'Visitor'}</div>
+            <div class="meeting-company">${c.company||''}${c.designation?' · '+c.designation:''}</div>
+          </div>
+          <span class="status-pill" style="background:${sc.bg};color:${sc.fg}">Accepted</span>
+        </div>
+        <div class="meeting-card-body">
+          <div class="meeting-detail">🕐 ${dtFmt}</div>
+          ${m.location?`<div class="meeting-detail">📍 ${m.location}</div>`:''}
+          ${m.topic?`<div class="meeting-detail">💬 ${m.topic}</div>`:''}
+
+          <div style="display:flex;gap:6px;margin-top:12px">
+            <button class="coll-btn" style="${cap.startTime?'border-color:var(--green);color:var(--green);background:var(--green-light)':''}" onclick="markMeetingTime('${m.id}','startTime')">
+              ${startFmt?'✓ '+startFmt:'▶ Start'}
+            </button>
+            <button class="coll-btn" style="${cap.endTime?'border-color:var(--red);color:var(--red);background:var(--red-light)':''}" onclick="markMeetingTime('${m.id}','endTime')">
+              ${endFmt?'✓ '+endFmt:'■ End'}
+            </button>
+          </div>
+
+          <div class="mode-tabs" style="margin-top:12px">
+            <button class="mode-tab ${cap.mode==='text'?'active':''}" onclick="setMeetingMode('${m.id}','text')">✏️ Type</button>
+            <button class="mode-tab ${cap.mode==='voice'?'active':''}" onclick="setMeetingMode('${m.id}','voice')">🎙 Voice</button>
+          </div>
+
+          <div id="mTextMode-${m.id}" style="display:${cap.mode==='text'?'block':'none'}">
+            <textarea id="notes-${m.id}" oninput="syncNotes('${m.id}')" placeholder="Meeting notes…" style="height:70px">${cap.notes||''}</textarea>
+          </div>
+          <div id="mVoiceMode-${m.id}" style="display:${cap.mode==='voice'?'block':'none'}">
+            <div id="mVoiceIdle-${m.id}" style="display:${(!mRecMeetingId||mRecMeetingId!==m.id)?'block':'none'};text-align:center;padding:14px;background:var(--border-light);border-radius:var(--radius)">
+              <button onclick="startMeetingVoice('${m.id}')" style="border:none;background:var(--navy);color:white;width:44px;height:44px;border-radius:50%;font-size:18px;cursor:pointer">🎙</button>
+              <div style="font-size:10px;color:var(--muted);margin-top:6px">Tap to record</div>
+            </div>
+            <div id="mVoiceRecording-${m.id}" style="display:${mRecMeetingId===m.id?'block':'none'};text-align:center;padding:14px;background:var(--red-light);border-radius:var(--radius)">
+              <button onclick="stopMeetingVoice('${m.id}')" style="border:none;background:var(--red);color:white;width:44px;height:44px;border-radius:50%;font-size:18px;cursor:pointer">■</button>
+              <div style="font-size:11px;color:var(--red);font-weight:700;margin-top:6px" id="mRecTimer-${m.id}">0s</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:4px" id="mInterimText-${m.id}">Speak now…</div>
+            </div>
+            ${cap.transcript?`<div style="font-size:11px;color:var(--text);margin-top:8px;padding:8px;background:var(--border-light);border-radius:var(--radius-sm)">${cap.transcript}</div>`:''}
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button onclick="runMeetingAI('${m.id}')" id="mAIBtn-${m.id}" style="font-size:11px;color:var(--purple);background:none;border:1px solid var(--purple);border-radius:99px;padding:5px 12px;cursor:pointer;font-family:inherit;font-weight:600">✦ AI Analyse</button>
+          </div>
+          <div id="mAILoading-${m.id}" style="display:none;text-align:center;padding:10px;font-size:11px;color:var(--muted)">Analysing…</div>
+          <div id="mAIResult-${m.id}">${cap.ai ? renderMeetingAIHtml(cap.ai) : ''}</div>
+
+          <button onclick="completeMeeting('${m.id}')" style="margin-top:12px;width:100%;padding:11px;background:var(--green);color:white;border:none;border-radius:var(--radius);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✓ Mark completed</button>
+        </div>
+      </div>`;
+  };
+
+  const renderCompletedCard = (m) => {
+    const c = m.audience_contacts || {};
+    const sc = MEETING_STATUS_COLORS.completed;
+    const st = m.actual_start_time ? new Date(m.actual_start_time) : null;
+    const et = m.actual_end_time ? new Date(m.actual_end_time) : null;
+    const timeLine = st ? `${st.toLocaleString([],{dateStyle:'medium',timeStyle:'short'})}${et?' – '+et.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}` : (m.completed_at ? new Date(m.completed_at).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}) : '—');
+    const durationMin = (st && et) ? Math.round((et-st)/60000) : null;
+    return `
+      <div class="meeting-card" style="opacity:.88">
+        <div class="meeting-card-head">
+          <div>
+            <div class="meeting-name">${c.name||c.email||'Visitor'}</div>
+            <div class="meeting-company">${c.company||''}${c.designation?' · '+c.designation:''}</div>
+          </div>
+          <span class="status-pill" style="background:${sc.bg};color:${sc.fg}">✓ Done</span>
+        </div>
+        <div class="meeting-card-body">
+          <div class="meeting-detail">🕐 ${timeLine}${durationMin!==null?' · '+durationMin+' min':''}</div>
+          ${m.location?`<div class="meeting-detail">📍 ${m.location}</div>`:''}
+          ${m.topic?`<div class="meeting-detail">💬 ${m.topic}</div>`:''}
+          ${m.staff_completion_notes?`<div style="margin-top:8px;font-size:11px;color:var(--text);padding:8px;background:var(--border-light);border-radius:var(--radius-sm);white-space:pre-wrap;line-height:1.5">${m.staff_completion_notes}</div>`:''}
+          ${m.ai_analysis?`<div style="margin-top:8px">${renderMeetingAIHtml(m.ai_analysis)}</div>`:''}
+        </div>
+      </div>`;
+  };
+
+  let html = '';
+  html += sectionLabel('Upcoming', upcoming.length);
+  html += upcoming.length ? upcoming.map(renderUpcomingCard).join('') : '<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">No accepted meetings pending.</div>';
+  html += sectionLabel('Completed', completed.length);
+  html += completed.length ? completed.map(renderCompletedCard).join('') : '<div style="text-align:center;padding:16px;color:var(--muted);font-size:12px">Nothing completed yet.</div>';
+  el.innerHTML = html;
+}
+
+function setMeetingMode(id, mode) {
+  syncNotes(id);
+  getCapture(id).mode = mode;
+  renderMeetings();
+}
+function markMeetingTime(id, which) {
+  getCapture(id)[which] = new Date().toISOString();
+  syncNotes(id);
+  renderMeetings();
+}
+function startMeetingVoice(id) {
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)) { alert('Voice not supported. Use Chrome.'); return; }
+  if (mRecognition) { try { mRecognition.stop(); } catch(e){} }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  mRecognition = new SR(); mRecognition.continuous = true; mRecognition.interimResults = true; mRecognition.lang = 'en-US';
+  mRecMeetingId = id; mRecSeconds = 0;
+  let localFinal = getCapture(id).transcript || '';
+  document.getElementById(`mVoiceIdle-${id}`).style.display = 'none';
+  document.getElementById(`mVoiceRecording-${id}`).style.display = 'block';
+  mRecInterval = setInterval(()=>{ mRecSeconds++; const t=document.getElementById(`mRecTimer-${id}`); if(t) t.textContent=mRecSeconds+'s'; }, 1000);
+  mRecognition.onresult = (e) => {
+    let interim = '';
+    for(let i=e.resultIndex;i<e.results.length;i++) {
+      if(e.results[i].isFinal) localFinal += e.results[i][0].transcript+' ';
+      else interim += e.results[i][0].transcript;
+    }
+    const el = document.getElementById(`mInterimText-${id}`);
+    if (el) el.textContent = (localFinal+interim).slice(-120) || 'Speak now…';
+    getCapture(id).transcript = localFinal.trim();
+  };
+  mRecognition.onerror = () => stopMeetingVoice(id);
+  mRecognition.start();
+}
+function stopMeetingVoice(id) {
+  if (mRecognition) { try { mRecognition.stop(); } catch(e){} mRecognition = null; }
+  clearInterval(mRecInterval); mRecMeetingId = null;
+  const cap = getCapture(id);
+  if (cap.transcript) cap.notes = (cap.notes ? cap.notes+'\n' : '') + cap.transcript;
+  renderMeetings();
+}
+function renderMeetingAIHtml(a) {
+  const intentColors={strong:'#16A34A',moderate:'#2563EB',weak:'#DC2626'};
+  const col = intentColors[a.intentLevel] || '#64748B';
+  const signals = (a.buyingSignals||[]).map(s=>`<span style="background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC;padding:2px 8px;border-radius:99px;font-size:9px;margin:2px">${s}</span>`).join('');
+  const flags = (a.redFlags||[]).map(s=>`<span style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;padding:2px 8px;border-radius:99px;font-size:9px;margin:2px">${s}</span>`).join('');
+  return `<div style="padding:10px;background:var(--border-light);border-radius:var(--radius);border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${col}20;color:${col}">${a.intentLevel||'—'} intent</span>
+      <span style="font-size:11px;font-weight:700;color:${(a.scoreDelta||'').startsWith('+')?'#16A34A':'#DC2626'}">${a.scoreDelta||''}</span>
+    </div>
+    ${a.recommendedAction?`<div style="font-size:11px;color:var(--text);margin-top:6px">${a.recommendedAction}</div>`:''}
+    ${signals?`<div style="margin-top:6px">${signals}</div>`:''}
+    ${flags?`<div style="margin-top:4px">${flags}</div>`:''}
+    ${a.followUpHook?`<div style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic">↳ ${a.followUpHook}</div>`:''}
+  </div>`;
+}
+async function runMeetingAI(id) {
+  syncNotes(id);
+  const cap = getCapture(id);
+  const src = (cap.notes||'').trim();
+  if (!src) { alert('Please type or record meeting notes first.'); return; }
+  const m = cachedMeetings.find(x=>x.id===id);
+  const c = m ? (m.audience_contacts||{}) : {};
+  document.getElementById(`mAILoading-${id}`).style.display='block';
+  document.getElementById(`mAIBtn-${id}`).disabled=true;
+  try {
+    const res = await fetch(`${API}/audience/ai/analyse-conversation`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ visitor:{name:c.name,company:c.company}, conversation:src }) });
+    const data = await res.json();
+    if (data && data.intentLevel) { cap.ai = data; document.getElementById(`mAIResult-${id}`).innerHTML = renderMeetingAIHtml(data); }
+  } catch(e) {}
+  document.getElementById(`mAILoading-${id}`).style.display='none';
+  document.getElementById(`mAIBtn-${id}`).disabled=false;
+}
+async function completeMeeting(meetingId) {
+  const btn = document.querySelector(`button[onclick="completeMeeting('${meetingId}')"]`);
+  if (btn) { btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Completing…'; }
+  const meeting = cachedMeetings.find(m=>m.id===meetingId);
+  if (meeting) { meeting.status='completed'; meeting.completed_at=new Date().toISOString(); }
+  renderMeetings();
+  syncNotes(meetingId);
+  if (mRecMeetingId===meetingId) stopMeetingVoice(meetingId);
+  const cap = getCapture(meetingId);
+  const payload = {
+    staff_completion_notes: (cap.notes||'').trim()||null,
+    actual_start_time: cap.startTime||null,
+    actual_end_time: cap.endTime||null,
+    ai_analysis: cap.ai||null,
+    staff_name: state.staff?.name||null,
+    staff_email: state.staffEmail||null,
+    voice_transcript: (cap.transcript||'').trim()||null,
+  };
+  try {
+    const res = await fetch(`${API}/meetings/staff/${meetingId}/complete`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    if (!res.ok) {
+      if (meeting) { meeting.status='accepted'; meeting.completed_at=null; }
+      renderMeetings(); alert('Could not update meeting. Try again.'); return;
+    }
+    delete meetingCapture[meetingId];
+    await loadMeetings();
+  } catch(e) {
+    if (meeting) { meeting.status='accepted'; meeting.completed_at=null; }
+    renderMeetings(); alert('Connection error');
+  }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────
+function onSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  state.query = q;
+  const drop = document.getElementById('searchDrop');
+  if(!q) { drop.style.display='none'; return; }
+  const matches = state.visitors.filter(v=>(v.name||'').toLowerCase().includes(q)||(v.company||'').toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)).slice(0,6);
+  if(!matches.length) { drop.style.display='none'; return; }
+  drop.innerHTML = matches.map((v,i)=>`
+    <div class="search-drop-item" id="ddi_${i}">
+      <div><div class="drop-name">${v.name||v.email}</div><div class="drop-company">${v.company||''}</div></div>
+      <span class="tier-badge ${v.iei_tier||'Cold'}">${v.iei_tier||'?'}</span>
+    </div>
+  `).join('');
+  matches.forEach((v,i)=>{ document.getElementById(`ddi_${i}`).onclick=()=>selectVisitor(v); });
+  drop.style.display='block';
+  document.getElementById('selVisitor').style.display='none';
+}
+
+function selectVisitor(v) {
+  state.sel = v;
+  document.getElementById('searchInput').value = v.name||v.email;
+  document.getElementById('searchDrop').style.display='none';
+  document.getElementById('selName').textContent = v.name||v.email;
+  document.getElementById('selMeta').textContent = [v.designation,v.company].filter(Boolean).join(' · ');
+  document.getElementById('selBadges').innerHTML = `<span class="tier-badge ${v.iei_tier||'Cold'}">${v.iei_tier||'?'}</span>`;
+  document.getElementById('selScore').textContent = Math.round(v.iei_score||0);
+  document.getElementById('selScore').style.color = v.iei_tier==='Hot'?'#ef4444':v.iei_tier==='Warm'?'#f97316':v.iei_tier==='Cool'?'#3b82f6':'#9ca3af';
+  if(v.raw_data?.primary_reason) {
+    document.getElementById('selReason').textContent = v.raw_data.primary_reason;
+    document.getElementById('selReason').style.cssText = 'font-size:10px;padding:1px 6px;border-radius:99px;background:#DBEAFE;color:#1E3A8A;font-weight:600';
+  }
+  document.getElementById('selVisitor').style.display='block';
+  ['step2','step3','step4','step5','step6','step8'].forEach(id=>document.getElementById(id).classList.remove('locked'));
+
+  if (v.id) {
+    fetch(`${API}/audience/check-signal/${v.id}`, { headers:{'x-fingoh-auth':`Bearer ${state.token}`} })
+    .then(r=>r.json())
+    .then(data => {
+      if (!data.exists||!data.signal) return;
+      const sig = data.signal;
+      if (sig.conversation_quality) { const score=Math.round(sig.conversation_quality); if(score>=1&&score<=5) setScore(score); }
+      const qtRaw = sig.question_types;
+      const qtArr = Array.isArray(qtRaw)?qtRaw:(typeof qtRaw==='string'&&qtRaw.startsWith('['))?JSON.parse(qtRaw):(qtRaw?[qtRaw]:[]);
+      state.qTypes = [];
+      document.querySelectorAll('.q-chip').forEach(btn => {
+        const chipVal = btn.dataset.q||btn.textContent.trim();
+        if (qtArr.some(qt=>chipVal.toLowerCase().includes(qt.toLowerCase())||qt.toLowerCase().includes(chipVal.toLowerCase()))) {
+          btn.classList.add('sel'); btn.style.background='var(--navy)'; btn.style.borderColor='var(--navy)'; btn.style.color='white';
+          if (!state.qTypes.includes(chipVal)) state.qTypes.push(chipVal);
+        }
+      });
+      if (sig.return_visit&&!state.ret) toggleSignal('ret');
+      if (sig.demo_requested&&!state.demo) toggleSignal('demo');
+      if (sig.badge_scan&&!state.badge) toggleSignal('badge');
+      if (sig.buying_group&&!state.bg) toggleSignal('bg');
+      if (sig.meeting_booked&&!state.mtg) toggleSignal('mtg');
+      if (sig.collateral) { const collMap={'none':'coll_none','Generic brochure':'coll_generic','Specific asset':'coll_specific'}; const collBtn=document.getElementById(collMap[sig.collateral]||'coll_none'); if(collBtn) setColl(collBtn,sig.collateral); }
+      if (sig.urgency) { const urgMap={'low':'urg_low','medium':'urg_medium','high':'urg_high'}; const urgBtn=document.getElementById(urgMap[sig.urgency]); if(urgBtn) setUrgency(urgBtn,sig.urgency); }
+      if (sig.notes) document.getElementById('captureField').value = sig.notes;
+      const existingBanner = document.getElementById('overwriteBanner');
+      if (!existingBanner) {
+        const banner = document.createElement('div');
+        banner.id='overwriteBanner'; banner.className='overwrite-banner';
+        let html = '<strong>⚠ Previous signal found</strong> — form pre-filled. Re-submit to overwrite.';
+        if (sig.ai_intent_level) {
+          const col=sig.ai_intent_level==='strong'?'#16A34A':sig.ai_intent_level==='moderate'?'#D97706':'#DC2626';
+          html+=`<div style="margin-top:6px;padding:6px 8px;background:white;border-radius:6px;border:1px solid var(--border)"><div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px">PREVIOUS AI ANALYSIS</div><div style="font-size:11px;color:${col};font-weight:600">Intent: ${sig.ai_intent_level.toUpperCase()}</div>${sig.ai_buying_signals?.length?`<div style="font-size:10px;color:#475569;margin-top:2px">Signals: ${sig.ai_buying_signals.slice(0,3).join(' · ')}</div>`:''}</div>`;
+        }
+        banner.innerHTML = html;
+        document.getElementById('selVisitor').appendChild(banner);
+      }
+    }).catch(()=>{});
+  }
+}
+
+// ── Score ─────────────────────────────────────────────────────────────────
+function setScore(n) {
+  state.score = n;
+  [1,2,3,4,5].forEach(i=>{
+    const btn = document.getElementById(`sb${i}`);
+    if(i===n) { btn.style.borderColor=scoreColors[n]; btn.style.background=scoreColors[n]; btn.classList.add('sel'); }
+    else { btn.style.borderColor='var(--border)'; btn.style.background='var(--surface)'; btn.classList.remove('sel'); }
+  });
+  const fb = document.getElementById('scoreFeedback');
+  fb.style.display='block'; fb.textContent=scoreLabels[n];
+  fb.style.background=scoreColors[n]+'20'; fb.style.color=scoreColors[n];
+}
+
+// ── Q types ───────────────────────────────────────────────────────────────
+function toggleQ(btn, q) {
+  const idx = state.qTypes.indexOf(q);
+  if(idx>-1) { state.qTypes.splice(idx,1); btn.classList.remove('sel'); btn.style.background='var(--surface)'; btn.style.borderColor='var(--border)'; btn.style.color='var(--muted)'; }
+  else { state.qTypes.push(q); const col=btn.dataset.col; btn.classList.add('sel'); btn.style.background=col; btn.style.borderColor=col; btn.style.color='white'; }
+  updateQFeedback();
+}
+function updateQFeedback() {
+  const fb = document.getElementById('qFeedback');
+  if(!state.qTypes.length) { fb.style.display='none'; return; }
+  const qt = state.qTypes;
+  let msg='', col='var(--muted)';
+  if(qt.includes('Pricing')&&qt.includes('Implementation')) { msg='Active evaluation — strong buying intent'; col='#16A34A'; }
+  else if(qt.includes('Pricing')) { msg='Commercial interest confirmed'; col='#2563EB'; }
+  else if(qt.includes('Implementation')) { msg='Planning adoption — strong buying stage'; col='#2563EB'; }
+  else if(qt.includes('Technical')) { msg='Technical evaluation in progress'; col='#7C3AED'; }
+  else if(qt.includes('Competitive')) { msg='Market comparison — flag for competitive intel'; col='#D97706'; }
+  else msg='General interest';
+  fb.style.display='block'; fb.innerHTML=`<span style="font-weight:600;color:var(--navy)">Signal: </span><span style="color:${col}">${msg}</span>`;
+}
+
+// ── Toggles ───────────────────────────────────────────────────────────────
+function toggleSignal(key) {
+  state[key] = !state[key];
+  const on = state[key];
+  const col = toggleColors[key] || '#64748B';
+  const K = key.charAt(0).toUpperCase()+key.slice(1);
+  const track = document.getElementById(`track${K}`);
+  const thumb = document.getElementById(`thumb${K}`);
+  const row = document.getElementById(`tog${K}`);
+  if(track) track.style.background = on ? col : 'var(--border)';
+  if(thumb) thumb.style.left = on ? '21px' : '3px';
+  if(row) { row.style.background = on ? col+'0D' : ''; }
+}
+
+// ── Collateral ────────────────────────────────────────────────────────────
+function setColl(btn, val) {
+  state.collateral = state.collateral===val ? '' : val;
+  ['none','generic','specific'].forEach(v=>{ const b=document.getElementById(`coll_${v}`); b.style.borderColor='var(--border)'; b.style.background='var(--surface)'; b.style.color='var(--muted)'; });
+  if(state.collateral) {
+    const col = val==='specific'?'#E11D48':val==='generic'?'#64748B':'#94A3B8';
+    btn.style.borderColor=col; btn.style.background=col; btn.style.color='white';
+    document.getElementById('collHint').style.display = val==='specific'?'block':'none';
+  } else { document.getElementById('collHint').style.display='none'; }
+}
+
+// ── Urgency ───────────────────────────────────────────────────────────────
+function setUrgency(btn, val) {
+  state.urgency = state.urgency===val ? '' : val;
+  const cols = {low:'#64748B',medium:'#EAB308',high:'#16A34A'};
+  ['low','medium','high'].forEach(v=>{ const b=document.getElementById(`urg_${v}`); b.style.borderColor='var(--border)'; b.style.background='var(--surface)'; b.style.color='var(--muted)'; });
+  if(state.urgency) { const col=cols[val]; btn.style.borderColor=col; btn.style.background=col; btn.style.color='white'; }
+}
+
+// ── Submit ────────────────────────────────────────────────────────────────
+async function submitSignal() {
+  const errEl=document.getElementById('submitErr');
+  const btn=document.getElementById('submitBtn');
+  errEl.style.display='none';
+  if(!state.sel) { errEl.textContent='Please find and select a visitor first.'; errEl.style.display='block'; return; }
+  if(!state.score) { errEl.textContent='Please rate the conversation quality.'; errEl.style.display='block'; return; }
+  btn.innerHTML='<span class="spinner"></span>Saving…'; btn.disabled=true;
+  try {
+    const payload = {
+      email: state.sel.email,
+      conv_quality: state.score,
+      questions_type: state.qTypes[0]?.toLowerCase().replace(' / ','_')||'general',
+      demo_attendance: state.demo,
+      collateral_requested: state.collateral||'none',
+      return_visit: state.ret,
+      badge_scan: state.badge,
+      buying_group: state.bg,
+      meeting_booked: state.mtg,
+      urgency: state.urgency,
+      notes: document.getElementById('captureField').value.trim(),
+      ai_intent_level: aiAnalysis?.intentLevel||null,
+      ai_buying_signals: aiAnalysis?.buyingSignals||[],
+      ai_score_delta: aiAnalysis?.scoreDelta||null,
+    };
+    const res = await fetch(`${API}/audience/log-signal/${state.event_id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail||'Save failed');
+    document.getElementById('formView').style.display='none';
+    document.getElementById('doneMsg').innerHTML = `
+      <div style="display:flex;gap:16px;justify-content:center;margin-top:8px">
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#166534;font-weight:600;margin-bottom:2px">PRE-EVENT IEI</div>
+          <div style="font-size:28px;font-weight:800;color:#16A34A">${Math.round(data.iei_score||0)}</div>
+          <div style="font-size:10px;color:#166634">${data.iei_tier||''}</div>
+        </div>
+        <div style="width:1px;background:#86EFAC"></div>
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#166534;font-weight:600;margin-bottom:2px">ON-SITE IEI</div>
+          <div style="font-size:28px;font-weight:800;color:#0D9488">${Math.round(data.onsite_iei_score||0)}</div>
+          <div style="font-size:10px;color:#166534">${data.onsite_iei_tier||''}</div>
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:12px;color:#166534">${state.sel.name}'s signal captured</p>`;
+    document.getElementById('doneView').style.display='block';
+    resetForm();
+    setTimeout(()=>{ document.getElementById('doneView').style.display='none'; document.getElementById('formView').style.display='flex'; }, 2500);
+  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
+  btn.innerHTML='Log signal →'; btn.disabled=false;
+}
+
+function resetForm() {
+  state.sel=null; state.score=null; state.qTypes=[]; state.ret=false; state.demo=false;
+  state.badge=false; state.bg=false; state.mtg=false; state.collateral=''; state.urgency='';
+  document.getElementById('searchInput').value='';
+  document.getElementById('selVisitor').style.display='none';
+  const ob=document.getElementById('overwriteBanner'); if(ob) ob.remove();
+  try { document.getElementById('captureField').value=''; } catch(e) {}
+  [1,2,3,4,5].forEach(i=>{ const b=document.getElementById(`sb${i}`); b.style.borderColor='var(--border)'; b.style.background='var(--surface)'; b.classList.remove('sel'); });
+  document.getElementById('scoreFeedback').style.display='none';
+  document.getElementById('qFeedback').style.display='none';
+  document.querySelectorAll('.q-chip').forEach(b=>{ b.classList.remove('sel'); b.style.background='var(--surface)'; b.style.borderColor='var(--border)'; b.style.color='var(--muted)'; });
+  ['step2','step3','step4','step5','step6','step8'].forEach(id=>document.getElementById(id).classList.add('locked'));
+}
+
+// ── Conversation capture ──────────────────────────────────────────────────
+let voiceMode = 'text';
+let recognition = null;
+let recInterval = null;
+let recSeconds = 0;
+let finalTranscript = '';
+let aiAnalysis = null;
+
+function setMode(mode) {
+  voiceMode = mode;
+  ['Text','Voice','AI'].forEach(m=>document.getElementById('mode'+m).classList.remove('active'));
+  if (mode!=='ai') document.getElementById('mode'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('active');
+  document.getElementById('textMode').style.display = mode==='text'?'block':'none';
+  document.getElementById('voiceMode').style.display = mode==='voice'?'block':'none';
+}
+function startVoice() {
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)) { alert('Voice not supported. Use Chrome.'); return; }
+  const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition = new SR(); recognition.continuous=true; recognition.interimResults=true; recognition.lang='en-US';
+  finalTranscript=''; recSeconds=0;
+  document.getElementById('voiceIdle').style.display='none';
+  document.getElementById('voiceRecording').style.display='block';
+  document.getElementById('voiceTranscript').style.display='none';
+  recInterval = setInterval(()=>{ recSeconds++; document.getElementById('recTimer').textContent=recSeconds+'s'; }, 1000);
+  recognition.onresult = (e) => {
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++) { if(e.results[i].isFinal) finalTranscript+=e.results[i][0].transcript+' '; else interim+=e.results[i][0].transcript; }
+    document.getElementById('interimText').textContent = (finalTranscript+interim).slice(-120)||'Speak now…';
+  };
+  recognition.onerror = () => stopVoice();
+  recognition.start();
+}
+function stopVoice() {
+  if(recognition) { recognition.stop(); recognition=null; }
+  clearInterval(recInterval);
+  const text = finalTranscript.trim();
+  document.getElementById('voiceRecording').style.display='none';
+  if(text) { document.getElementById('transcriptText').textContent=text; document.getElementById('voiceTranscript').style.display='block'; document.getElementById('captureField').value=text; }
+  else document.getElementById('voiceIdle').style.display='block';
+}
+function retryVoice() {
+  finalTranscript='';
+  document.getElementById('voiceTranscript').style.display='none';
+  document.getElementById('voiceIdle').style.display='block';
+  document.getElementById('aiResult').style.display='none';
+  aiAnalysis=null;
+}
+async function runAI() {
+  const src = document.getElementById('captureField').value.trim()||finalTranscript.trim();
+  if(!src) { alert('Please type or record a conversation first.'); return; }
+  if(!state.sel) { alert('Please select a visitor first.'); return; }
+  document.getElementById('aiLoading').style.display='block';
+  document.getElementById('aiResult').style.display='none';
+  document.getElementById('modeAI').disabled=true;
+  try {
+    const res = await fetch('/api/v1/audience/ai/analyse-conversation', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ visitor:{name:state.sel?.name,company:state.sel?.company,iei_score:state.sel?.iei_score,iei_tier:state.sel?.iei_tier}, conversation:src }) });
+    const data = await res.json();
+    aiAnalysis = data&&data.intentLevel ? data : null;
+    if(aiAnalysis) renderAI(aiAnalysis);
+  } catch(e) {}
+  document.getElementById('aiLoading').style.display='none';
+  document.getElementById('modeAI').disabled=false;
+}
+function renderAI(a) {
+  const intentColors={strong:'#16A34A',moderate:'#2563EB',weak:'#DC2626'};
+  const col=intentColors[a.intentLevel]||'#64748B';
+  document.getElementById('aiIntentBadge').textContent=(a.intentLevel||'')+' intent';
+  document.getElementById('aiIntentBadge').style.background=col+'30';
+  document.getElementById('aiIntentBadge').style.color=col;
+  document.getElementById('aiDelta').textContent=a.scoreDelta||'+0';
+  document.getElementById('aiDelta').style.color=a.scoreDelta?.startsWith('+')?'#4ADE80':'#FCA5A5';
+  document.getElementById('aiAction').textContent=a.recommendedAction||'';
+  document.getElementById('aiBuyingSignals').innerHTML=(a.buyingSignals||[]).map(s=>`<span style="background:rgba(255,255,255,.1);padding:2px 8px;border-radius:99px;font-size:10px;color:rgba(255,255,255,.8)">${s}</span>`).join('');
+  if((a.redFlags||[]).length) { document.getElementById('aiRedFlagsWrap').style.display='block'; document.getElementById('aiRedFlags').innerHTML=a.redFlags.map(s=>`<span style="background:rgba(220,38,38,.2);padding:2px 8px;border-radius:99px;font-size:10px;color:#FCA5A5">${s}</span>`).join(''); }
+  document.getElementById('aiFollowUp').textContent=a.followUpHook||'';
+  const src2=document.getElementById('captureField').value.trim()||finalTranscript.trim();
+  const preview=document.getElementById('aiTranscriptPreview');
+  if(preview&&src2) { preview.textContent='"'+src2.slice(0,120)+(src2.length>120?'…':'')+'"'; preview.style.display='block'; }
+  document.getElementById('aiResult').style.display='block';
+}
+
+// ── Passcode modal ────────────────────────────────────────────────────────
+function showChangePasscode() { document.getElementById('cpModal').classList.add('show'); ['cpCurrent','cpNew','cpConfirm'].forEach(id=>document.getElementById(id).value=''); document.getElementById('cpErr').style.display='none'; document.getElementById('cpSuccess').style.display='none'; }
+function hideChangePasscode() { document.getElementById('cpModal').classList.remove('show'); }
+async function submitChangePasscode() {
+  const current=document.getElementById('cpCurrent').value.trim();
+  const newPc=document.getElementById('cpNew').value.trim();
+  const confirm=document.getElementById('cpConfirm').value.trim();
+  const errEl=document.getElementById('cpErr');
+  const btn=document.getElementById('cpBtn');
+  errEl.style.display='none';
+  if (!current) { errEl.textContent='Enter your current passcode.'; errEl.style.display='block'; return; }
+  if (newPc.length<4) { errEl.textContent='New passcode must be at least 4 characters.'; errEl.style.display='block'; return; }
+  if (newPc!==confirm) { errEl.textContent='New passcodes do not match.'; errEl.style.display='block'; return; }
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Saving…';
+  try {
+    const res = await fetch(`${API}/staff/change-passcode`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({staff_id:state.staff?.id,current_passcode:current,new_passcode:newPc}) });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent=data.detail||'Failed.'; errEl.style.display='block'; }
+    else { document.getElementById('cpSuccess').style.display='block'; setTimeout(hideChangePasscode, 1500); }
+  } catch(e) { errEl.textContent='Connection error.'; errEl.style.display='block'; }
+  btn.disabled=false; btn.innerHTML='Save new passcode';
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+window.addEventListener('load', () => { updateOfflineBanner(); updateChoiceOfflineBanner(); syncQueue(); });
+</script>
+</body>
+</html>
