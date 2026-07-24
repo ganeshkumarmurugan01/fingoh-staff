@@ -5,26 +5,6 @@
       "destination": "https://api-dev.fingoh.ai/api/v1/:path*"
     },
     {
-      "source": "/manifest.json",
-      "destination": "/manifest.json"
-    },
-    {
-      "source": "/sw.js",
-      "destination": "/sw.js"
-    },
-    {
-      "source": "/icons/:file*",
-      "destination": "/icons/:file*"
-    },
-    {
-      "source": "/Fingoh_Black.png",
-      "destination": "/Fingoh_Black.png"
-    },
-    {
-      "source": "/Fingoh_White.png",
-      "destination": "/Fingoh_White.png"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
