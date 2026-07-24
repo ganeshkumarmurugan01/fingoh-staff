@@ -1276,13 +1276,20 @@ let cachedMeetings = [];
 window.addEventListener('load',()=>{
   try {
     const s = JSON.parse(sessionStorage.getItem('fingoh_staff')||'null');
-    if(s?.staff && s?.event_id) {
+    if(s?.staff?.id && s?.event_id && s?.event_name) {
       Object.assign(state, s);
       enterAppMode();
       loadVisitors();
       loadMeetings();
+    } else {
+      // Clear any partial session and start fresh
+      sessionStorage.removeItem('fingoh_staff');
+      showScreen('emailScreen');
     }
-  } catch {}
+  } catch {
+    sessionStorage.removeItem('fingoh_staff');
+    showScreen('emailScreen');
+  }
 });
 
 function saveSession() {
