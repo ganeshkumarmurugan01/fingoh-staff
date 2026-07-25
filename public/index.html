@@ -785,16 +785,34 @@ input.search-input { padding-left: 36px; font-size: 14px; }
 
   <!-- ══ TOP HEADER (shown on app screens) ══ -->
   <header id="app-header">
-    <div class="header-left">
+    <div class="header-left" style="display:flex;align-items:center;gap:8px">
+      <button class="icon-btn" onclick="showScreen('choiceScreen')" title="Back">←</button>
+      <img src="/Fingoh_Black.png" alt="Fingoh" style="height:20px;display:block">
+    </div>
+    <div style="flex:1;text-align:center">
       <div class="header-event" id="headerEvent">—</div>
-      <div class="header-staff" id="headerStaff">—</div>
     </div>
     <div class="header-right">
       <div class="live-pill"><div class="live-dot"></div>Live</div>
-      <button class="icon-btn" onclick="showChangePasscode()" title="Change passcode">🔑</button>
-      <button class="icon-btn" onclick="doLogout()" title="Sign out">↪</button>
+      <button class="icon-btn" onclick="showProfileSheet()" title="Profile" id="profileBtn" style="font-size:12px;font-weight:800;background:var(--navy);color:white;border-color:var(--navy)">G</button>
     </div>
   </header>
+
+  <!-- Profile bottom sheet -->
+  <div id="profileSheet" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:white" id="profileAvatar">G</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy)" id="profileName">—</div>
+          <div style="font-size:12px;color:var(--muted)" id="profileEmail">—</div>
+        </div>
+      </div>
+      <button onclick="hideProfileSheet();showChangePasscode()" class="btn btn-ghost" style="margin-bottom:8px;text-align:left;justify-content:flex-start;gap:10px">🔑 Change passcode</button>
+      <button onclick="hideProfileSheet();doLogout()" class="btn" style="background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA;text-align:left;justify-content:flex-start;gap:10px">↪ Sign out</button>
+    </div>
+  </div>
 
   <!-- ══ SCREENS ══ -->
 
@@ -1311,8 +1329,19 @@ function showScreen(id) {
 
 function enterAppMode() {
   document.getElementById('headerEvent').textContent = state.event_name || '—';
-  document.getElementById('headerStaff').textContent = state.staff?.name ? `Logging as ${state.staff.name}` : '—';
+  const initial = (state.staff?.name || 'G')[0].toUpperCase();
+  document.getElementById('profileBtn').textContent = initial;
+  document.getElementById('profileAvatar').textContent = initial;
+  document.getElementById('profileName').textContent = state.staff?.name || '—';
+  document.getElementById('profileEmail').textContent = state.staffEmail || '—';
   showScreen('appScreen');
+}
+
+function showProfileSheet() {
+  document.getElementById('profileSheet').classList.add('show');
+}
+function hideProfileSheet() {
+  document.getElementById('profileSheet').classList.remove('show');
 }
 
 // ── Choice screen ─────────────────────────────────────────────────────────
