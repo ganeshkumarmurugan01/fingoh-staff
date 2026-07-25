@@ -1,8 +1,5 @@
-const CACHE = 'fingoh-staff-v3';
+const CACHE = 'fingoh-staff-v4';
 const SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-512-maskable.png',
@@ -26,10 +23,9 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Ignore non-http(s) requests (chrome-extension://, etc.)
   if (!url.protocol.startsWith('http')) return;
 
-  // Never cache API or auth calls — always network
+  // Never cache API or auth calls
   if (
     url.pathname.startsWith('/api/') ||
     url.hostname.includes('supabase') ||
@@ -46,7 +42,15 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // App shell — cache-first, update cache on network hit
+  // HTML files — always network-first, never serve stale
+  if (e.request.headers.get('accept')?.includes('text/html')) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Static assets — cache-first
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
