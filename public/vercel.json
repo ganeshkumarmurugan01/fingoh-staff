@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/v1/:path*",
-      "destination": "https://api-dev.fingoh.ai/api/v1/:path*"
+      "source": "/api/v1/:path*"
+      "destination": "https://api.fingoh.ai/api/v1/:path*"
     },
     {
       "source": "/(.*)",
