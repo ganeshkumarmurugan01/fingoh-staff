@@ -784,18 +784,19 @@ input.search-input { padding-left: 36px; font-size: 14px; }
 <div id="app-shell">
 
   <!-- ══ TOP HEADER (shown on app screens) ══ -->
-  <header id="app-header" style="height:auto;padding:10px 16px;flex-direction:row;align-items:center;gap:0">
-    <!-- Left: back button -->
-    <button class="icon-btn" onclick="showScreen('choiceScreen')" title="Back" style="flex-shrink:0">←</button>
-    <!-- Centre: logo + event name -->
-    <div style="flex:1;text-align:center;padding:0 8px">
-      <img src="/Fingoh_Black.png" alt="Fingoh" style="height:18px;display:inline-block;vertical-align:middle;margin-right:6px">
-      <span style="font-size:12px;font-weight:700;color:var(--navy);vertical-align:middle" id="headerEvent">—</span>
+  <header id="app-header" style="height:auto;padding:10px 16px 8px;flex-direction:column;align-items:stretch;gap:0">
+    <!-- Row 1: back | logo (centred) | live + profile -->
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <button class="icon-btn" onclick="showScreen('choiceScreen')" title="Back" style="flex-shrink:0">←</button>
+      <img src="/Fingoh_Black.png" alt="Fingoh" style="height:28px;display:block;position:absolute;left:50%;transform:translateX(-50%)">
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <div class="live-pill"><div class="live-dot"></div>Live</div>
+        <button class="icon-btn" onclick="showProfileSheet()" title="Profile" id="profileBtn" style="font-size:12px;font-weight:800;background:var(--navy);color:white;border-color:var(--navy)">G</button>
+      </div>
     </div>
-    <!-- Right: live + profile -->
-    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-      <div class="live-pill"><div class="live-dot"></div>Live</div>
-      <button class="icon-btn" onclick="showProfileSheet()" title="Profile" id="profileBtn" style="font-size:12px;font-weight:800;background:var(--navy);color:white;border-color:var(--navy)">G</button>
+    <!-- Row 2: event name centred -->
+    <div style="text-align:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+      <span style="font-size:12px;font-weight:700;color:var(--muted)" id="headerEvent">—</span>
     </div>
   </header>
 
