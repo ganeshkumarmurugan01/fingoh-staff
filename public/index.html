@@ -900,11 +900,15 @@ input.search-input { padding-left: 36px; font-size: 14px; }
   <!-- WALK-IN SCREEN -->
   <div class="screen" id="walkInScreen">
     <div class="screen-content no-tabs">
-      <div class="walkin-header">
-        <button class="back-btn" onclick="showScreen('choiceScreen')">←</button>
-        <div>
-          <div class="walkin-title">Walk-in Visitor</div>
-          <div class="walkin-sub">Scan card or enter details manually</div>
+      <div class="walkin-header" style="flex-direction:column;align-items:stretch;padding:10px 16px 8px;gap:0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <button class="back-btn" onclick="showScreen('choiceScreen')">←</button>
+          <img src="/Fingoh_Black.png" alt="Fingoh" style="height:26px;display:block;position:absolute;left:50%;transform:translateX(-50%)">
+          <div style="width:34px"></div>
+        </div>
+        <div style="text-align:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--navy)">Walk-in Visitor</div>
+          <div style="font-size:11px;color:var(--muted)">Scan card or enter details manually</div>
         </div>
       </div>
 
