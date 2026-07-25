@@ -174,14 +174,14 @@ html, body {
 .tab-label { font-size: 10px; font-weight: 600; letter-spacing: .01em; }
 
 /* ── Screen system ── */
-.screen { display: none; }
-.screen.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.screen { display: none !important; }
+.screen.active { display: flex !important; flex-direction: column; flex: 1; min-height: 0; }
 
 /* Full-page screens (email, event, passcode, choice) */
-.full-screen {
+.full-screen.active {
   min-height: 100dvh;
   background: var(--bg);
-  display: flex; flex-direction: column;
+  display: flex !important; flex-direction: column;
 }
 
 /* ── Auth screens ── */
