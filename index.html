@@ -2203,6 +2203,8 @@ async function submitSignal() {
   try {
     const res = await fetch(`${API}/audience/log-signal/${state.event_id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     const data = await res.json();
+    // SW returns {error:'offline'} when network unavailable
+    if (data?.error === 'offline') throw new Error('offline');
     if(!res.ok) throw new Error(data.detail||'Save failed');
     document.getElementById('formView').style.display='none';
     document.getElementById('doneMsg').innerHTML = `
@@ -2224,16 +2226,21 @@ async function submitSignal() {
     resetForm();
     setTimeout(()=>{ document.getElementById('doneView').style.display='none'; document.getElementById('formView').style.display='flex'; }, 2500);
   } catch(e) {
+    // Queue locally — covers both offline and network errors
     await enqueue('signal', payload);
     await updateOfflineBanner();
+    await updateChoiceOfflineBanner();
+    btn.innerHTML='Log signal →'; btn.disabled=false;
     document.getElementById('formView').style.display='none';
+    const isOffline = e.message === 'offline' || !navigator.onLine;
     document.getElementById('doneMsg').innerHTML = `
       <div style="font-size:36px;margin-bottom:8px">📶</div>
-      <div style="font-size:15px;font-weight:700;color:#92400E;margin-bottom:6px">Queued for sync</div>
-      <div style="font-size:12px;color:#78350F">Network error — signal saved locally and will sync when connected.</div>`;
+      <div style="font-size:15px;font-weight:700;color:#92400E;margin-bottom:6px">${isOffline ? 'Saved offline' : 'Queued for sync'}</div>
+      <div style="font-size:12px;color:#78350F">${state.sel?.name || 'Signal'} queued locally.<br>Will sync automatically when connected.</div>`;
     document.getElementById('doneView').style.display='block';
     resetForm();
     setTimeout(()=>{ document.getElementById('doneView').style.display='none'; document.getElementById('formView').style.display='flex'; }, 3000);
+    return;
   }
   btn.innerHTML='Log signal →'; btn.disabled=false;
 }
