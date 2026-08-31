@@ -1288,7 +1288,7 @@ input.search-input { padding-left: 36px; font-size: 14px; }
 </div>
 
 <script>
-const API = "/api/v1";
+const API = "https://api.fingoh.ai/api/v1";
 const scoreColors = {1:"#94A3B8",2:"#64748B",3:"#EAB308",4:"#3B82F6",5:"#16A34A"};
 const scoreLabels = {1:"Pass-through",2:"Polite interest",3:"Engaged",4:"Strong evaluator",5:"Active buyer"};
 const toggleColors = {ret:"#16A34A",demo:"#2563EB",badge:"#64748B",bg:"#7C3AED",mtg:"#0D9488"};
@@ -1437,7 +1437,11 @@ async function syncQueue() {
     try {
       let url, body;
       if (item.type === 'walk_in') { url = `${API}/audience/walk-in`; body = item.payload; }
-      else if (item.type === 'signal') { url = `${API}/audience/signal`; body = item.payload; }
+      else if (item.type === 'signal') { 
+        const eid = item.payload?.event_id || state.event_id;
+        url = `${API}/audience/log-signal/${eid}`; 
+        body = item.payload; 
+      }
       if (!url) { await deleteQueued(item.id); continue; }
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 15000);
