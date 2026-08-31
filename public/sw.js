@@ -1,4 +1,4 @@
-const CACHE = 'fingoh-staff-v7';
+const CACHE = 'fingoh-staff-v8';
 const SHELL = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -32,11 +32,20 @@ self.addEventListener('fetch', e => {
     url.hostname.includes('railway') ||
     url.hostname.includes('modal')
   ) {
+    // Pass through directly — do NOT clone POST requests on iOS Safari
+    if (e.request.method !== 'GET') {
+      e.respondWith(
+        fetch(e.request).catch(() =>
+          new Response(JSON.stringify({ error: 'offline', offline: true }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        )
+      );
+      return;
+    }
     e.respondWith(
-      fetch(e.request.clone()).then(res => {
-        // For POST requests, never cache — just return response
-        return res;
-      }).catch(() =>
+      fetch(e.request).catch(() =>
         new Response(JSON.stringify({ error: 'offline', offline: true }), {
           status: 503,
           headers: { 'Content-Type': 'application/json' },
