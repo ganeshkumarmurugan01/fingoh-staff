@@ -2367,7 +2367,13 @@ async function submitChangePasscode() {
 
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // Unregister all old service workers first, then register fresh
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    const unregs = regs.map(r => r.unregister());
+    return Promise.all(unregs);
+  }).then(() => {
+    return navigator.serviceWorker.register('/sw.js?v=9');
+  }).catch(() => {});
 }
 window.addEventListener('load', () => { updateOfflineBanner(); updateChoiceOfflineBanner(); syncQueue(); });
 </script>
