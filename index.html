@@ -2203,8 +2203,8 @@ async function submitSignal() {
   try {
     const res = await fetch(`${API}/audience/log-signal/${state.event_id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     const data = await res.json();
-    // SW returns {error:'offline'} when network unavailable
-    if (data?.error === 'offline') throw new Error('offline');
+    // SW returns 503 + {error:'offline'} when network unavailable
+    if (res.status === 503 || data?.error === 'offline' || data?.offline) throw new Error('offline');
     if(!res.ok) throw new Error(data.detail||'Save failed');
     document.getElementById('formView').style.display='none';
     document.getElementById('doneMsg').innerHTML = `
