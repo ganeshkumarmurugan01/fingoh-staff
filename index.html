@@ -433,10 +433,10 @@ input.search-input { padding-left: 36px; font-size: 14px; }
   font-size: 10px; font-weight: 700;
   flex-shrink: 0;
 }
-.tier-badge.Hot { background: #FEE2E2; color: #991B1B; }
-.tier-badge.Warm { background: #FEF3C7; color: #92400E; }
-.tier-badge.Cool { background: #DBEAFE; color: #1E40AF; }
-.tier-badge.Cold { background: var(--border-light); color: #475569; }
+.tier-badge.Hot, .tier-badge.T1 { background: #FEE2E2; color: #991B1B; }
+.tier-badge.Warm, .tier-badge.T2 { background: #FEF3C7; color: #92400E; }
+.tier-badge.Cool, .tier-badge.T3 { background: #DBEAFE; color: #1E40AF; }
+.tier-badge.Cold, .tier-badge.T4 { background: var(--border-light); color: #475569; }
 
 /* ── Score grid ── */
 .score-grid {
@@ -1308,6 +1308,8 @@ window.addEventListener('load',()=>{
     const s = JSON.parse(sessionStorage.getItem('fingoh_staff')||'null');
     if(s?.staff?.id && s?.event_id && s?.event_name) {
       Object.assign(state, s);
+      state.token = s.token || '';
+      state.staffEmail = s.staffEmail || '';
       enterAppMode();
       loadVisitors();
       loadMeetings();
@@ -1324,7 +1326,8 @@ window.addEventListener('load',()=>{
 
 function saveSession() {
   sessionStorage.setItem('fingoh_staff', JSON.stringify({
-    staff:state.staff, event_id:state.event_id, event_name:state.event_name
+    staff:state.staff, event_id:state.event_id, event_name:state.event_name,
+    token:state.token, staffEmail:state.staffEmail
   }));
 }
 
@@ -1373,9 +1376,15 @@ let _db = null;
 function openDB() {
   return new Promise((resolve, reject) => {
     if (_db) return resolve(_db);
-    const req = indexedDB.open('fingoh_staff', 1);
+    const req = indexedDB.open('fingoh_staff', 2);
     req.onupgradeneeded = e => {
-      e.target.result.createObjectStore('queue', {keyPath:'id', autoIncrement:true});
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('queue')) {
+        db.createObjectStore('queue', {keyPath:'id', autoIncrement:true});
+      }
+      if (!db.objectStoreNames.contains('visitors_cache')) {
+        db.createObjectStore('visitors_cache', {keyPath:'eventId'});
+      }
     };
     req.onsuccess = e => { _db = e.target.result; resolve(_db); };
     req.onerror   = () => reject(req.error);
@@ -1434,7 +1443,15 @@ async function syncQueue() {
       const timer = setTimeout(() => controller.abort(), 15000);
       let res;
       try {
-        res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), signal:controller.signal });
+        res = await fetch(url, {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'x-fingoh-auth': `Bearer ${state.token || ''}`
+          },
+          body:JSON.stringify(body),
+          signal:controller.signal
+        });
       } finally { clearTimeout(timer); }
       const responseText = await res.text();
       if (res.ok) { await deleteQueued(item.id); synced++; }
@@ -1471,8 +1488,13 @@ async function syncQueueFromApp() {
   const result = await syncQueue();
   if (btn) { btn.disabled = false; btn.textContent = result?.synced > 0 && result?.failed === 0 ? '✓ Synced!' : 'Sync now'; setTimeout(()=>{ if(btn) btn.textContent='Sync now'; },2000); }
 }
-window.addEventListener('online',  () => { syncQueue(); updateOfflineBanner(); updateChoiceOfflineBanner(); });
+window.addEventListener('online',  () => { syncQueue(); updateOfflineBanner(); updateChoiceOfflineBanner(); loadVisitors(); });
 window.addEventListener('offline', () => { updateOfflineBanner(); updateChoiceOfflineBanner(); });
+
+// Periodic sync every 30s when online
+setInterval(() => {
+  if (navigator.onLine && state.event_id) syncQueue();
+}, 30000);
 
 // ── Business card scan ───────────────────────────────────────────────────
 function compressImage(file, maxPx=900, quality=0.65) {
@@ -1655,6 +1677,7 @@ async function _doVerifyLogin(passcode) {
     }
     if (!res.ok) { alert(data.detail||'Login failed'); if(btn){btn.disabled=false;btn.innerHTML='Confirm →';} return; }
     state.staff = data; state.event_id = ev.id; state.event_name = ev.name;
+    state.token = data.token || data.access_token || '';
     state._pendingEvent = null;
     saveSession();
     enterAppMode();
@@ -1673,10 +1696,55 @@ async function submitPasscode() {
 
 // ── Visitors ──────────────────────────────────────────────────────────────
 async function loadVisitors() {
+  // Try to load from IndexedDB cache first (works offline)
   try {
-    const res = await fetch(`${API}/audience/visitors/${state.event_id}`);
-    if(res.ok) state.visitors = await res.json();
-  } catch {}
+    const cached = await getCachedVisitors(state.event_id);
+    if (cached && cached.length > 0) {
+      state.visitors = cached;
+      console.log(`[staff] Loaded ${cached.length} visitors from cache`);
+    }
+  } catch(e) {}
+
+  // Then fetch fresh from API if online
+  if (!navigator.onLine) return;
+  try {
+    const res = await fetch(`${API}/audience/visitors/${state.event_id}`, {
+      headers: { 'x-fingoh-auth': `Bearer ${state.token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        state.visitors = data;
+        await cacheVisitors(state.event_id, data);
+        console.log(`[staff] Fetched and cached ${data.length} visitors`);
+      }
+    }
+  } catch(e) {
+    console.warn('[staff] loadVisitors fetch failed:', e);
+  }
+}
+
+// IndexedDB visitor cache helpers
+async function getCachedVisitors(eventId) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    if (!db.objectStoreNames.contains('visitors_cache')) return resolve([]);
+    const tx = db.transaction('visitors_cache', 'readonly');
+    const req = tx.objectStore('visitors_cache').get(eventId);
+    req.onsuccess = () => resolve(req.result?.visitors || []);
+    req.onerror = () => resolve([]);
+  });
+}
+
+async function cacheVisitors(eventId, visitors) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    if (!db.objectStoreNames.contains('visitors_cache')) return resolve();
+    const tx = db.transaction('visitors_cache', 'readwrite');
+    tx.objectStore('visitors_cache').put({ eventId, visitors, cachedAt: Date.now() });
+    tx.oncomplete = resolve;
+    tx.onerror = () => resolve();
+  });
 }
 
 // ── App tabs ──────────────────────────────────────────────────────────────
@@ -1939,7 +2007,15 @@ function onSearch() {
   const drop = document.getElementById('searchDrop');
   if(!q) { drop.style.display='none'; return; }
   const matches = state.visitors.filter(v=>(v.name||'').toLowerCase().includes(q)||(v.company||'').toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)).slice(0,6);
-  if(!matches.length) { drop.style.display='none'; return; }
+  if(!matches.length) {
+    if (!navigator.onLine && !state.visitors.length) {
+      drop.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--amber)">📶 Offline — visitor list not yet cached. Connect once to load visitors.</div>';
+      drop.style.display = 'block';
+    } else {
+      drop.style.display='none';
+    }
+    return;
+  }
   drop.innerHTML = matches.map((v,i)=>`
     <div class="search-drop-item" id="ddi_${i}">
       <div><div class="drop-name">${v.name||v.email}</div><div class="drop-company">${v.company||''}</div></div>
@@ -1959,7 +2035,8 @@ function selectVisitor(v) {
   document.getElementById('selMeta').textContent = [v.designation,v.company].filter(Boolean).join(' · ');
   document.getElementById('selBadges').innerHTML = `<span class="tier-badge ${v.iei_tier||'Cold'}">${v.iei_tier||'?'}</span>`;
   document.getElementById('selScore').textContent = Math.round(v.iei_score||0);
-  document.getElementById('selScore').style.color = v.iei_tier==='Hot'?'#ef4444':v.iei_tier==='Warm'?'#f97316':v.iei_tier==='Cool'?'#3b82f6':'#9ca3af';
+  const _tierCol = (t) => t==='T1'||t==='Hot'?'#ef4444':t==='T2'||t==='Warm'?'#f97316':t==='T3'||t==='Cool'?'#3b82f6':'#9ca3af';
+  document.getElementById('selScore').style.color = _tierCol(v.iei_tier);
   if(v.raw_data?.primary_reason) {
     document.getElementById('selReason').textContent = v.raw_data.primary_reason;
     document.getElementById('selReason').style.cssText = 'font-size:10px;padding:1px 6px;border-radius:99px;background:#DBEAFE;color:#1E3A8A;font-weight:600';
