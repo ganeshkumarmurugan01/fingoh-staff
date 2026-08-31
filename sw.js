@@ -1,4 +1,4 @@
-const CACHE = 'fingoh-staff-v4';
+const CACHE = 'fingoh-staff-v5';
 const SHELL = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -25,7 +25,7 @@ self.addEventListener('fetch', e => {
 
   if (!url.protocol.startsWith('http')) return;
 
-  // Never cache API or auth calls
+  // Never cache API or auth calls — always network, return offline marker on failure
   if (
     url.pathname.startsWith('/api/') ||
     url.hostname.includes('supabase') ||
@@ -33,8 +33,12 @@ self.addEventListener('fetch', e => {
     url.hostname.includes('modal')
   ) {
     e.respondWith(
-      fetch(e.request).catch(() =>
-        new Response(JSON.stringify({ error: 'offline' }), {
+      fetch(e.request.clone()).then(res => {
+        // For POST requests, never cache — just return response
+        return res;
+      }).catch(() =>
+        new Response(JSON.stringify({ error: 'offline', offline: true }), {
+          status: 503,
           headers: { 'Content-Type': 'application/json' },
         })
       )
