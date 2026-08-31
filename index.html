@@ -2160,23 +2160,45 @@ async function submitSignal() {
   if(!state.sel) { errEl.textContent='Please find and select a visitor first.'; errEl.style.display='block'; return; }
   if(!state.score) { errEl.textContent='Please rate the conversation quality.'; errEl.style.display='block'; return; }
   btn.innerHTML='<span class="spinner"></span>Saving…'; btn.disabled=true;
+  const payload = {
+    email:                state.sel.email,
+    contact_id:           state.sel.id || null,
+    event_id:             state.event_id,
+    conv_quality:         state.score,
+    questions_type:       state.qTypes[0]?.toLowerCase().replace(' / ','_')||'general',
+    question_types:       state.qTypes,
+    demo_attendance:      state.demo,
+    collateral_requested: state.collateral||'none',
+    return_visit:         state.ret,
+    badge_scan:           state.badge,
+    buying_group:         state.bg,
+    meeting_booked:       state.mtg,
+    urgency:              state.urgency,
+    notes:                document.getElementById('captureField').value.trim(),
+    ai_intent_level:      aiAnalysis?.intentLevel||null,
+    ai_buying_signals:    aiAnalysis?.buyingSignals||[],
+    ai_score_delta:       aiAnalysis?.scoreDelta||null,
+    staff_name:           state.staff?.name||null,
+    staff_email:          state.staffEmail||null,
+  };
+
+  if (!navigator.onLine) {
+    await enqueue('signal', payload);
+    await updateOfflineBanner();
+    await updateChoiceOfflineBanner();
+    btn.innerHTML='Log signal →'; btn.disabled=false;
+    document.getElementById('formView').style.display='none';
+    document.getElementById('doneMsg').innerHTML = `
+      <div style="font-size:36px;margin-bottom:8px">📶</div>
+      <div style="font-size:15px;font-weight:700;color:#92400E;margin-bottom:6px">Saved offline</div>
+      <div style="font-size:12px;color:#78350F">Signal queued for ${state.sel.name}.<br>Will sync when reconnected.</div>`;
+    document.getElementById('doneView').style.display='block';
+    resetForm();
+    setTimeout(()=>{ document.getElementById('doneView').style.display='none'; document.getElementById('formView').style.display='flex'; }, 3000);
+    return;
+  }
+
   try {
-    const payload = {
-      email: state.sel.email,
-      conv_quality: state.score,
-      questions_type: state.qTypes[0]?.toLowerCase().replace(' / ','_')||'general',
-      demo_attendance: state.demo,
-      collateral_requested: state.collateral||'none',
-      return_visit: state.ret,
-      badge_scan: state.badge,
-      buying_group: state.bg,
-      meeting_booked: state.mtg,
-      urgency: state.urgency,
-      notes: document.getElementById('captureField').value.trim(),
-      ai_intent_level: aiAnalysis?.intentLevel||null,
-      ai_buying_signals: aiAnalysis?.buyingSignals||[],
-      ai_score_delta: aiAnalysis?.scoreDelta||null,
-    };
     const res = await fetch(`${API}/audience/log-signal/${state.event_id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     const data = await res.json();
     if(!res.ok) throw new Error(data.detail||'Save failed');
@@ -2199,7 +2221,18 @@ async function submitSignal() {
     document.getElementById('doneView').style.display='block';
     resetForm();
     setTimeout(()=>{ document.getElementById('doneView').style.display='none'; document.getElementById('formView').style.display='flex'; }, 2500);
-  } catch(e) { errEl.textContent=e.message; errEl.style.display='block'; }
+  } catch(e) {
+    await enqueue('signal', payload);
+    await updateOfflineBanner();
+    document.getElementById('formView').style.display='none';
+    document.getElementById('doneMsg').innerHTML = `
+      <div style="font-size:36px;margin-bottom:8px">📶</div>
+      <div style="font-size:15px;font-weight:700;color:#92400E;margin-bottom:6px">Queued for sync</div>
+      <div style="font-size:12px;color:#78350F">Network error — signal saved locally and will sync when connected.</div>`;
+    document.getElementById('doneView').style.display='block';
+    resetForm();
+    setTimeout(()=>{ document.getElementById('doneView').style.display='none'; document.getElementById('formView').style.display='flex'; }, 3000);
+  }
   btn.innerHTML='Log signal →'; btn.disabled=false;
 }
 
