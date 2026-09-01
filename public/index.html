@@ -856,8 +856,6 @@ input.search-input { padding-left: 36px; font-size: 14px; }
 /* ── Misc ── */
 .divider { height: 1px; background: var(--border-light); margin: 0 16px; }
 </style>
-  <!-- Tesseract.js - self-hosted for offline OCR -->
-  <script src="/tesseract/tesseract.min.js"></script>
 </head>
 <body>
 
@@ -1742,64 +1740,6 @@ function compressImage(file, maxPx=900, quality=0.65) {
     img.src = url;
   });
 }
-// ── On-device OCR with self-hosted Tesseract.js ─────────────────────────────
-async function ocrCardOnDevice(file) {
-  try {
-    // Tesseract v2 with fully self-hosted paths — works offline
-    const worker = Tesseract.createWorker({
-      workerPath:  '/tesseract/worker.min.js',
-      langPath:    '/tesseract',
-      corePath:    '/tesseract/tesseract-core.wasm',
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          const pct = Math.round(m.progress * 100);
-          const el  = document.getElementById('scanStatus');
-          if (el) el.textContent = `🔍 Scanning… ${pct}%`;
-        }
-      }
-    });
-    await worker.load();
-    await worker.loadLanguage('eng');
-    await worker.initialize('eng');
-    const { data: { text } } = await worker.recognize(file);
-    await worker.terminate();
-    return text || '';
-  } catch(e) {
-    console.warn('[OCR]', e);
-    return '';
-  }
-}
-
-function extractContactFromText(text) {
-  const lines   = text.split('\n').map(l => l.trim()).filter(Boolean);
-  const contact = {};
-
-  // Email — most reliable
-  const emailMatch = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
-  if (emailMatch) contact.email = emailMatch[0].toLowerCase();
-
-  // Phone
-  const phoneMatch = text.match(/[+]?[\d\s\-().]{9,18}/);
-  if (phoneMatch) contact.phone = phoneMatch[0].trim();
-
-  // Name — first title-case line without digits or special chars
-  for (const line of lines.slice(0, 5)) {
-    if (line.length < 3 || line.length > 50) continue;
-    if (/[@0-9+|]/.test(line)) continue;
-    if (/^(mr|mrs|dr|prof|inc|ltd|llc|pvt|www|tel|fax|mob)/i.test(line)) continue;
-    if (!contact.name && /^[A-Z][a-z]/.test(line) && line.split(' ').length <= 5) {
-      contact.name = line; continue;
-    }
-    if (!contact.designation && /manager|director|ceo|cto|vp|president|head|officer|engineer|analyst|consultant|executive|founder|partner|associate/i.test(line)) {
-      contact.designation = line; continue;
-    }
-    if (!contact.company && (line === line.toUpperCase() || /inc|ltd|llc|pvt|solutions|technologies|pharma|group|systems|services|corp/i.test(line))) {
-      contact.company = line; continue;
-    }
-  }
-  return contact;
-}
-
 async function onCardPhoto(input) {
   const file = input.files[0];
   if (!file) return;
@@ -1840,33 +1780,11 @@ async function onCardPhoto(input) {
     }
 
     if (!scanSuccess) {
-      // ── Fallback: Tesseract on-device OCR ────────────────────────────
-      statusEl.style.background = '#EFF6FF'; statusEl.style.color = '#1E40AF';
-      statusEl.textContent = '🔍 Scanning on device…';
-      try {
-        if (typeof Tesseract === 'undefined' || typeof Tesseract.createWorker !== 'function') {
-          throw new Error('Tesseract not available');
-        }
-        const ocrText = await ocrCardOnDevice(file);
-        if (!ocrText.trim()) throw new Error('No text detected');
-        const contact = extractContactFromText(ocrText);
-        if (contact.name || contact.email || contact.company) {
-          if (contact.name)        document.getElementById('wi_name').value        = contact.name;
-          if (contact.company)     document.getElementById('wi_company').value     = contact.company;
-          if (contact.designation) document.getElementById('wi_designation').value = contact.designation;
-          if (contact.email)       document.getElementById('wi_email').value       = contact.email;
-          if (contact.phone)       document.getElementById('wi_phone').value       = contact.phone;
-          statusEl.style.background = '#F0FDF4'; statusEl.style.color = '#166534';
-          statusEl.textContent = '✓ Card scanned offline — review and complete details';
-        } else {
-          statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
-          statusEl.textContent = '⚠ Could not read card — fill manually';
-        }
-      } catch(e) {
-        statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
-        statusEl.textContent = '📶 Card shown above — fill details manually';
-        document.getElementById('wi_name')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      // No internet — show card photo, staff fills manually
+      // iOS Live Text can be used to copy text from the card photo
+      statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
+      statusEl.textContent = '📶 Offline — use Live Text to copy from card above';
+      document.getElementById('wi_name')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   } catch(e) {
     statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
