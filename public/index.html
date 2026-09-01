@@ -2502,105 +2502,102 @@ function setMode(mode) {
   document.getElementById('textMode').style.display = mode==='text'?'block':'none';
   document.getElementById('voiceMode').style.display = mode==='voice'?'block':'none';
 }
-// ── MediaRecorder voice (works offline) ──────────────────────────────────
-let mediaRecorder = null;
-let audioChunks   = [];
-let audioBlob     = null;
+// ── Voice recording — Web Speech API (online) + MediaRecorder (offline) ─────
+let mediaRecorder   = null;
+let audioChunks     = [];
+let audioBlob       = null;
+let srRecognition   = null;  // Web Speech API instance
 
 async function startVoice() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioChunks = [];
-    audioBlob   = null;
-    finalTranscript = '';
-    recSeconds  = 0;
+  finalTranscript = '';
+  recSeconds      = 0;
+  audioChunks     = [];
+  audioBlob       = null;
 
-    // Pick best supported format
-    const mimeType = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].find(t => MediaRecorder.isTypeSupported(t)) || '';
-    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+  document.getElementById('voiceIdle').style.display       = 'none';
+  document.getElementById('voiceRecording').style.display  = 'block';
+  document.getElementById('voiceTranscript').style.display = 'none';
 
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
-      audioBlob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
-      await processVoiceBlob(audioBlob);
+  recInterval = setInterval(() => {
+    recSeconds++;
+    document.getElementById('recTimer').textContent = recSeconds + 's';
+  }, 1000);
+
+  if (navigator.onLine && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    // ── Online: Web Speech API — live transcription ─────────────────────
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    srRecognition = new SR();
+    srRecognition.continuous      = true;
+    srRecognition.interimResults  = true;
+    srRecognition.lang            = 'en-US';
+    srRecognition.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' ';
+        else interim += e.results[i][0].transcript;
+      }
+      document.getElementById('interimText').textContent = (finalTranscript + interim).slice(-120) || 'Speak now…';
     };
-
-    mediaRecorder.start(250); // collect chunks every 250ms
-    document.getElementById('voiceIdle').style.display      = 'none';
-    document.getElementById('voiceRecording').style.display = 'block';
-    document.getElementById('voiceTranscript').style.display= 'none';
-    recInterval = setInterval(() => {
-      recSeconds++;
-      document.getElementById('recTimer').textContent = recSeconds + 's';
-      // Animate interim text
-      const dots = '.'.repeat((recSeconds % 3) + 1);
-      document.getElementById('interimText').textContent = 'Recording' + dots;
-    }, 1000);
-  } catch(e) {
-    alert('Microphone access denied. Please allow microphone in Safari settings.');
+    srRecognition.onerror = () => stopVoice();
+    srRecognition.start();
+  } else {
+    // ── Offline: MediaRecorder — save audio locally ──────────────────────
+    try {
+      const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg']
+        .find(t => MediaRecorder.isTypeSupported(t)) || '';
+      mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        audioBlob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
+      };
+      mediaRecorder.start(250);
+      document.getElementById('interimText').textContent = '📶 Recording offline…';
+    } catch(e) {
+      clearInterval(recInterval);
+      document.getElementById('voiceRecording').style.display = 'none';
+      document.getElementById('voiceIdle').style.display      = 'block';
+      alert('Microphone access denied. Please allow microphone in Safari settings.');
+    }
   }
 }
 
 function stopVoice() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
   clearInterval(recInterval);
+
+  // Stop Web Speech API
+  if (srRecognition) { srRecognition.stop(); srRecognition = null; }
+
+  // Stop MediaRecorder
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
+
   document.getElementById('voiceRecording').style.display = 'none';
-  document.getElementById('interimText').textContent = 'Speak now…';
-}
 
-async function processVoiceBlob(blob) {
-  // Show processing state
-  document.getElementById('voiceIdle').style.display = 'none';
-  document.getElementById('voiceRecording').style.display = 'none';
-
-  if (!navigator.onLine) {
-    // Store blob in IndexedDB for later transcription
-    await storeVoiceBlob(blob);
-    document.getElementById('transcriptText').textContent = '📶 Voice saved offline — will transcribe when connected';
-    document.getElementById('voiceTranscript').style.display = 'block';
-    document.getElementById('captureField').value = '[Voice recorded offline — transcription pending]';
-    return;
-  }
-
-  // Show transcribing state
-  document.getElementById('transcriptText').textContent = '⏳ Transcribing…';
-  document.getElementById('voiceTranscript').style.display = 'block';
-
-  try {
-    // Convert blob to base64
-    const b64 = await blobToBase64(blob);
-    const res = await fetch(`${API}/audience/transcribe-voice`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        audio_base64: b64,
-        mime_type: blob.type || 'audio/webm',
-        event_id: state.event_id,
-        contact_id: state.sel?.id || null,
-      })
-    });
-    const data = await res.json();
-    if (res.ok && data.transcript) {
-      finalTranscript = data.transcript;
-      document.getElementById('transcriptText').textContent = data.transcript;
-      document.getElementById('captureField').value = data.transcript;
+  // Small delay to let MediaRecorder finish collecting chunks
+  setTimeout(() => {
+    const text = finalTranscript.trim();
+    if (text) {
+      // Web Speech transcript available
+      document.getElementById('transcriptText').textContent = text;
+      document.getElementById('voiceTranscript').style.display = 'block';
+      document.getElementById('captureField').value = text;
+    } else if (audioBlob) {
+      // Offline recording — store for later
+      storeVoiceBlob(audioBlob).then(() => {
+        document.getElementById('transcriptText').textContent = '📶 Voice saved offline — notes will be added when you reconnect';
+        document.getElementById('voiceTranscript').style.display = 'block';
+        document.getElementById('captureField').value = '[Voice recorded offline — will transcribe when connected]';
+      });
     } else {
-      throw new Error('Transcription failed');
+      document.getElementById('voiceIdle').style.display = 'block';
     }
-  } catch(e) {
-    // Queue for later transcription
-    await storeVoiceBlob(blob);
-    document.getElementById('transcriptText').textContent = '📶 Transcription queued — will process when connected';
-    document.getElementById('captureField').value = '[Voice recorded — transcription pending]';
-  }
+  }, 300);
 }
 
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    const reader   = new FileReader();
     reader.onload  = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
@@ -2609,26 +2606,25 @@ function blobToBase64(blob) {
 
 async function storeVoiceBlob(blob) {
   try {
-    const db = await openDB();
-    // Store in queue as voice type
+    const db  = await openDB();
     const b64 = await blobToBase64(blob);
     const tx  = db.transaction('queue', 'readwrite');
     tx.objectStore('queue').add({
       type: 'voice',
       payload: {
         audio_base64: b64,
-        mime_type: blob.type || 'audio/webm',
-        event_id: state.event_id,
-        contact_id: state.sel?.id || null,
+        mime_type:    blob.type || 'audio/webm',
+        event_id:     state.event_id,
+        contact_id:   state.sel?.id || null,
         contact_name: state.sel?.name || null,
-        ts: Date.now(),
+        ts:           Date.now(),
       },
       ts: Date.now(),
     });
     await updateOfflineBanner();
     await updateChoiceOfflineBanner();
   } catch(e) {
-    console.warn('Failed to store voice blob:', e);
+    console.warn('[voice] Failed to store blob:', e);
   }
 }
 function retryVoice() {
