@@ -1,5 +1,11 @@
-const CACHE = 'fingoh-staff-v9';
+const CACHE = 'fingoh-staff-v10';
 const SHELL = [
+  '/',
+  '/index.html',
+  '/tesseract/tesseract.min.js',
+  '/tesseract/worker.min.js',
+  '/tesseract/tesseract-core.wasm',
+  '/tesseract/eng.traineddata',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-512-maskable.png',
