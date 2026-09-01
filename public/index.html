@@ -1814,12 +1814,39 @@ async function onCardPhoto(input) {
   statusEl.textContent = '🔍 Scanning card…';
   try {
     const b64 = await compressImage(file);
-    if (!navigator.onLine) {
-      // ── Offline: self-hosted Tesseract OCR ──────────────────────────
+    // Try Claude vision first (online), fall back to Tesseract on any failure
+    let scanSuccess = false;
+    try {
+      const res = await fetch(`${API}/audience/scan-card`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({image_base64: b64, event_id: state.event_id})
+      });
+      const data = await res.json();
+      if (res.ok && data.contact) {
+        const c = data.contact;
+        if (c.name)        document.getElementById('wi_name').value        = c.name;
+        if (c.company)     document.getElementById('wi_company').value     = c.company;
+        if (c.designation) document.getElementById('wi_designation').value = c.designation;
+        if (c.email)       document.getElementById('wi_email').value       = c.email;
+        if (c.phone)       document.getElementById('wi_phone').value       = c.phone;
+        if (c.city)        document.getElementById('wi_city').value        = c.city;
+        if (c.country)     document.getElementById('wi_country').value     = c.country;
+        statusEl.style.background = '#F0FDF4'; statusEl.style.color = '#166534';
+        statusEl.textContent = '✓ Card scanned — review and save';
+        scanSuccess = true;
+      }
+    } catch(_) {
+      // Network failed — will try Tesseract below
+    }
+
+    if (!scanSuccess) {
+      // ── Fallback: Tesseract on-device OCR ────────────────────────────
       statusEl.style.background = '#EFF6FF'; statusEl.style.color = '#1E40AF';
-      statusEl.textContent = '🔍 Scanning card on device…';
+      statusEl.textContent = '🔍 Scanning on device…';
       try {
-        if (typeof Tesseract === 'undefined') throw new Error('Tesseract not loaded');
+        if (typeof Tesseract === 'undefined' || typeof Tesseract.createWorker !== 'function') {
+          throw new Error('Tesseract not available');
+        }
         const ocrText = await ocrCardOnDevice(file);
         if (!ocrText.trim()) throw new Error('No text detected');
         const contact = extractContactFromText(ocrText);
@@ -1840,27 +1867,6 @@ async function onCardPhoto(input) {
         statusEl.textContent = '📶 Card shown above — fill details manually';
         document.getElementById('wi_name')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-      return;
-    }
-    const res = await fetch(`${API}/audience/scan-card`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({image_base64: b64, event_id: state.event_id})
-    });
-    const data = await res.json();
-    if (res.ok && data.contact) {
-      const c = data.contact;
-      if (c.name) document.getElementById('wi_name').value = c.name;
-      if (c.company) document.getElementById('wi_company').value = c.company;
-      if (c.designation) document.getElementById('wi_designation').value = c.designation;
-      if (c.email) document.getElementById('wi_email').value = c.email;
-      if (c.phone) document.getElementById('wi_phone').value = c.phone;
-      if (c.city) document.getElementById('wi_city').value = c.city;
-      if (c.country) document.getElementById('wi_country').value = c.country;
-      statusEl.style.background = '#F0FDF4'; statusEl.style.color = '#166534';
-      statusEl.textContent = '✓ Card scanned — review and save';
-    } else {
-      statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
-      statusEl.textContent = '⚠ Could not read card — fill manually';
     }
   } catch(e) {
     statusEl.style.background = '#FFFBEB'; statusEl.style.color = '#92400E';
