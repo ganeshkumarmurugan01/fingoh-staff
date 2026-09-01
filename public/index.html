@@ -1745,10 +1745,11 @@ function compressImage(file, maxPx=900, quality=0.65) {
 // ── On-device OCR with self-hosted Tesseract.js ─────────────────────────────
 async function ocrCardOnDevice(file) {
   try {
-    const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+    // Tesseract v2 with fully self-hosted paths — works offline
+    const worker = Tesseract.createWorker({
       workerPath:  '/tesseract/worker.min.js',
-      langPath:    '/tesseract/',
-      corePath:    'https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js',
+      langPath:    '/tesseract',
+      corePath:    '/tesseract/tesseract-core.wasm',
       logger: m => {
         if (m.status === 'recognizing text') {
           const pct = Math.round(m.progress * 100);
@@ -1757,6 +1758,11 @@ async function ocrCardOnDevice(file) {
         }
       }
     });
+    await worker.load();
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    const { data: { text } } = await worker.recognize(file);
+    await worker.terminate();
     return text || '';
   } catch(e) {
     console.warn('[OCR]', e);
