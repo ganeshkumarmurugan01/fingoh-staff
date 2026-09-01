@@ -649,6 +649,84 @@ input.search-input { padding-left: 36px; font-size: 14px; }
   border-top: 1px solid var(--border-light);
 }
 
+/* ── Pre-event sync card ── */
+.sync-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+.sync-card.ready {
+  border-color: #86EFAC;
+  background: #F0FDF4;
+}
+.sync-card.syncing {
+  border-color: #93C5FD;
+  background: #EFF6FF;
+}
+.sync-card.stale {
+  border-color: #FCD34D;
+  background: #FFFBEB;
+}
+.sync-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sync-status-icon { font-size: 22px; }
+.sync-status-text { flex: 1; }
+.sync-status-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+.sync-status-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.sync-now-btn {
+  background: var(--navy);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.sync-now-btn:disabled {
+  background: var(--muted);
+  cursor: not-allowed;
+}
+.sync-progress {
+  margin-top: 10px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  display: none;
+}
+.sync-progress-bar {
+  height: 100%;
+  background: var(--navy);
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.sync-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.sync-stat {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sync-stat strong { color: var(--navy); font-weight: 700; }
+
 /* ── Voice recording ── */
 @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:.85} }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -871,6 +949,26 @@ input.search-input { padding-left: 36px; font-size: 14px; }
       <div class="auth-logo"><img src="/Fingoh_Black.png" alt="Fingoh.ai"></div>
       <h1 class="auth-title" style="margin-top:8px">Who are you meeting?</h1>
       <p class="auth-sub">Choose visitor type to get started</p>
+
+      <!-- Pre-event sync card -->
+      <div class="sync-card" id="syncCard">
+        <div class="sync-status-row">
+          <div class="sync-status-icon" id="syncIcon">📥</div>
+          <div class="sync-status-text">
+            <div class="sync-status-title" id="syncTitle">Sync for offline use</div>
+            <div class="sync-status-sub" id="syncSub">Download visitor data before entering the hall</div>
+          </div>
+          <button class="sync-now-btn" id="syncNowBtn" onclick="runPreEventSync()">Sync now</button>
+        </div>
+        <div class="sync-progress" id="syncProgress">
+          <div class="sync-progress-bar" id="syncProgressBar"></div>
+        </div>
+        <div class="sync-stats" id="syncStats" style="display:none">
+          <div class="sync-stat">👥 <strong id="statVisitors">0</strong> visitors</div>
+          <div class="sync-stat">📅 <strong id="statMeetings">0</strong> meetings</div>
+          <div class="sync-stat">🕐 <strong id="statTime">—</strong></div>
+        </div>
+      </div>
 
       <div style="width:100%">
         <button class="choice-btn" onclick="startProspect()">
@@ -1343,6 +1441,7 @@ function showScreen(id) {
 }
 
 function enterAppMode() {
+  setTimeout(loadSyncStatus, 500);  // Load sync status after screen shows
   const eventName = state.event_name || '—';
   const initial = (state.staff?.name || 'G')[0].toUpperCase();
   document.getElementById('headerEvent').textContent = eventName;
@@ -1480,7 +1579,127 @@ async function updateChoiceOfflineBanner() {
   if (items.length > 0) { bar.classList.add('show'); if (count) count.textContent = items.length; }
   else bar.classList.remove('show');
 }
-async function syncQueueFromChoice() {
+async function runPreEventSync() {
+  if (!navigator.onLine) {
+    alert('No internet connection. Connect to Wi-Fi and try again.');
+    return;
+  }
+  const btn   = document.getElementById('syncNowBtn');
+  const card  = document.getElementById('syncCard');
+  const icon  = document.getElementById('syncIcon');
+  const title = document.getElementById('syncTitle');
+  const sub   = document.getElementById('syncSub');
+  const prog  = document.getElementById('syncProgress');
+  const bar   = document.getElementById('syncProgressBar');
+  const stats = document.getElementById('syncStats');
+
+  btn.disabled = true;
+  btn.textContent = 'Syncing…';
+  card.className = 'sync-card syncing';
+  icon.textContent = '🔄';
+  title.textContent = 'Syncing data…';
+  sub.textContent = 'Downloading visitors and meetings';
+  prog.style.display = 'block';
+  bar.style.width = '10%';
+
+  try {
+    // 1. Sync visitors
+    title.textContent = 'Downloading visitors…';
+    bar.style.width = '30%';
+    const vRes = await fetch(`${API}/audience/visitors/${state.event_id}`, {
+      headers: { 'x-fingoh-auth': `Bearer ${state.token || ''}` }
+    });
+    const visitors = await vRes.json();
+    const vList = Array.isArray(visitors) ? visitors : (visitors?.contacts || []);
+    if (vList.length > 0) {
+      state.visitors = vList;
+      await cacheVisitors(state.event_id, vList);
+    }
+    bar.style.width = '60%';
+
+    // 2. Sync meetings
+    title.textContent = 'Downloading meetings…';
+    const mRes = await fetch(`${API}/meetings/staff/${state.event_id}`, {
+      headers: { 'x-fingoh-auth': `Bearer ${state.token || ''}` }
+    });
+    const meetings = await mRes.json();
+    const mList = Array.isArray(meetings) ? meetings : [];
+    bar.style.width = '80%';
+
+    // 3. Store sync metadata
+    const syncMeta = {
+      eventId:   state.event_id,
+      visitors:  vList.length,
+      meetings:  mList.length,
+      syncedAt:  Date.now(),
+    };
+    try {
+      const db = await openDB();
+      const tx = db.transaction('visitors_cache', 'readwrite');
+      tx.objectStore('visitors_cache').put({ eventId: `meta_${state.event_id}`, visitors: [], syncMeta });
+    } catch(_) {}
+
+    bar.style.width = '100%';
+    setTimeout(() => {
+      card.className = 'sync-card ready';
+      icon.textContent = '✅';
+      title.textContent = 'Ready for offline use';
+      const t = new Date(syncMeta.syncedAt);
+      const timeStr = t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      sub.textContent = `Last synced ${timeStr}`;
+      btn.textContent = 'Re-sync';
+      btn.disabled = false;
+      prog.style.display = 'none';
+      stats.style.display = 'flex';
+      document.getElementById('statVisitors').textContent = vList.length;
+      document.getElementById('statMeetings').textContent = mList.length;
+      document.getElementById('statTime').textContent = timeStr;
+    }, 400);
+
+  } catch(e) {
+    card.className = 'sync-card stale';
+    icon.textContent = '⚠️';
+    title.textContent = 'Sync failed';
+    sub.textContent = 'Check connection and try again';
+    btn.textContent = 'Retry';
+    btn.disabled = false;
+    prog.style.display = 'none';
+  }
+}
+
+async function loadSyncStatus() {
+  // Load cached sync metadata and update card on screen load
+  try {
+    const db = await openDB();
+    const tx = db.transaction('visitors_cache', 'readonly');
+    const req = tx.objectStore('visitors_cache').get(`meta_${state.event_id}`);
+    req.onsuccess = () => {
+      const meta = req.result?.syncMeta;
+      if (meta) {
+        const card  = document.getElementById('syncCard');
+        const icon  = document.getElementById('syncIcon');
+        const title = document.getElementById('syncTitle');
+        const sub   = document.getElementById('syncSub');
+        const stats = document.getElementById('syncStats');
+        const t     = new Date(meta.syncedAt);
+        const timeStr = t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const ageMs = Date.now() - meta.syncedAt;
+        const isStale = ageMs > 2 * 60 * 60 * 1000; // > 2 hours = stale
+        card.className  = isStale ? 'sync-card stale' : 'sync-card ready';
+        icon.textContent  = isStale ? '⏰' : '✅';
+        title.textContent = isStale ? 'Sync may be outdated' : 'Ready for offline use';
+        sub.textContent   = `Last synced ${timeStr}`;
+        document.getElementById('syncNowBtn').textContent = 'Re-sync';
+        stats.style.display = 'flex';
+        document.getElementById('statVisitors').textContent = meta.visitors || 0;
+        document.getElementById('statMeetings').textContent = meta.meetings || 0;
+        document.getElementById('statTime').textContent = timeStr;
+      }
+    };
+  } catch(_) {}
+}
+
+function syncQueueFromChoice() {
   const btn = document.querySelector('#choiceOfflineBar .sync-btn');
   if (btn) { btn.textContent = 'Syncing…'; btn.disabled = true; }
   const result = await syncQueue();
