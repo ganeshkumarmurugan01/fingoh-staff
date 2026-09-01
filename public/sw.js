@@ -1,4 +1,4 @@
-const CACHE = 'fingoh-staff-v8';
+const CACHE = 'fingoh-staff-v9';
 const SHELL = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
