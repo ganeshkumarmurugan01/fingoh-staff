@@ -1,10 +1,9 @@
 /**
  * client-config.js — Staff App
- * Self-contained (no build step) — reads from window.__CLIENT_CONFIG
- * injected by the server, or falls back to defaults.
+ * Vanilla JS — no build step needed.
+ * Override window.__CLIENT_CONFIG before this script for customisation.
  */
 window.CLIENT_CONFIG = window.CLIENT_CONFIG || {};
-
 const cfg = window.CLIENT_CONFIG;
 
 const CLIENT = {
